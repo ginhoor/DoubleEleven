@@ -2392,20 +2392,54 @@
       countdownTimer = setInterval(updateCountdown, 1000);
     }
 
+    // 远程数据加载
+    async function loadDataFromAPI() {
+      try {
+        const res = await fetch('https://raw.githubusercontent.com/ginhoor/TuChuang/refs/heads/master/demo/demo_11_data.json', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const apiData = await res.json();
+
+        if (Array.isArray(apiData.teamData)) {
+          teamData = apiData.teamData;
+          localStorage.setItem('teamData', JSON.stringify(teamData));
+        }
+        if (apiData.trendData) {
+          trendDates = apiData.trendData.dates || trendDates || [];
+          trendData = apiData.trendData.teamData || {};
+          saveTrendData();
+        }
+        if (Array.isArray(apiData.announcements)) {
+          announcements = apiData.announcements;
+          localStorage.setItem('announcements', JSON.stringify(announcements));
+        }
+        if (Array.isArray(apiData.awards)) {
+          awards = apiData.awards;
+          const blockTitle = (apiData.blockTitle || DEFAULT_AWARD_TITLE);
+          localStorage.setItem('awards', JSON.stringify({ blockTitle, awards }));
+        }
+        if (apiData.systemSettings) {
+          const settings = { ...apiData.systemSettings, dataSource: 'api' };
+          localStorage.setItem('systemSettings', JSON.stringify(settings));
+          const dsEl = document.getElementById('dataSource');
+          if (dsEl) dsEl.value = 'api';
+        }
+      } catch (err) {
+        console.error('远程数据加载失败:', err);
+        showMessage('远程数据加载失败，暂用本地数据', 'error');
+      }
+    }
+
     // 刷新数据
-    function refreshData() {
+    async function refreshData() {
       const refreshBtn = document.getElementById('refreshBtn');
       refreshBtn.classList.add('animate-spin');
       refreshBtn.disabled = true;
-      
-      // 模拟数据刷新
-      setTimeout(() => {
-        loadTeamData();
+      try {
+        await loadDataFromAPI();
         renderRankingList();
         renderEditableTable();
         updateOverallRate();
         updateCharts();
-        
         // 更新最后更新时间
         const now = new Date();
         const timeString = now.toLocaleString('zh-CN', { 
@@ -2418,11 +2452,14 @@
           hour12: false
         });
         document.getElementById('lastUpdateTime').textContent = timeString;
-        
+        showMessage('数据已刷新', 'success');
+      } catch (e) {
+        console.error('刷新远程数据失败:', e);
+        showMessage('刷新失败，已保留本地数据', 'error');
+      } finally {
         refreshBtn.classList.remove('animate-spin');
         refreshBtn.disabled = false;
-        showMessage('数据已刷新', 'success');
-      }, 1000);
+      }
     }
 
     // 导出所有数据
@@ -3039,6 +3076,7 @@
         // 加载数据
         loadTeamData();
         loadSystemSettings();
+        await loadDataFromAPI();
         loadAnnouncements();
         loadAwards();
         loadTrendData();
