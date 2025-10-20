@@ -2395,7 +2395,7 @@
     // 远程数据加载
     async function loadDataFromAPI() {
       try {
-        const res = await fetch('https://raw.githubusercontent.com/ginhoor/TuChuang/refs/heads/master/demo/demo_11_data.json', { cache: 'no-store' });
+        const res = await fetch('https://github.com/ginhoor/DoubleEleven/blob/main/%E6%8E%92%E8%A1%8C%E6%A6%9C%E6%95%B0%E6%8D%AE_2025-10-20T11-48-22.json', { cache: 'no-store' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const apiData = await res.json();
 
