@@ -1,0 +1,3116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>双十一团队业绩排行榜</title>
+  
+  <!-- 引入外部资源 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+  
+  <!-- Tailwind 配置 -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#FF4D4F',
+            secondary: '#FAAD14',
+            success: '#52C41A',
+            neutral: {
+              100: '#F7F8FA',
+              200: '#F2F3F5',
+              300: '#E5E6EB',
+              400: '#C9CDD4',
+              500: '#86909C',
+              600: '#4E5969',
+              700: '#272E3B',
+              800: '#1D2129',
+            }
+          },
+          fontFamily: {
+            inter: ['Inter', 'system-ui', 'sans-serif'],
+          },
+          animation: {
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'bounce-slow': 'bounce 2s infinite',
+            'fadeIn': 'fadeIn 0.5s ease-in',
+            'slideUp': 'slideUp 0.5s ease-out',
+          },
+          keyframes: {
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' },
+            },
+            slideUp: {
+              '0%': { transform: 'translateY(20px)', opacity: '0' },
+              '100%': { transform: 'translateY(0)', opacity: '1' },
+            }
+          }
+        },
+      }
+    }
+  </script>
+  
+  <!-- 自定义样式 -->
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .card-hover {
+        @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+      }
+      .rank-up {
+        @apply text-success animate-pulse-slow;
+      }
+      .rank-down {
+        @apply text-primary animate-pulse-slow;
+      }
+      .progress-bar {
+        @apply h-2 rounded-full overflow-hidden bg-neutral-200;
+      }
+      .progress-value {
+        @apply h-full transition-all duration-1000 ease-out rounded-full;
+      }
+      .btn-primary {
+        @apply bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md;
+      }
+      .btn-secondary {
+        @apply bg-neutral-100 hover:bg-neutral-200 text-neutral-700 px-4 py-2 rounded-lg transition-all duration-200;
+      }
+      .input-field {
+        @apply w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all;
+      }
+    }
+  </style>
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      scroll-behavior: smooth;
+    }
+    
+    /* 优化的数字滚动动画 */
+    .number-scroll {
+      transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+    
+    /* 排行榜项动画 */
+    .rank-item {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .rank-item:hover {
+      transform: translateX(4px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+    
+    /* 加载动画 */
+    .loader {
+      border-top-color: #FF4D4F;
+      animation: spinner 0.6s linear infinite;
+    }
+    
+    @keyframes spinner {
+      to { transform: rotate(360deg); }
+    }
+    
+    /* 前三名奖牌效果 */
+    .medal-shine {
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .medal-shine::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        45deg,
+        transparent 30%,
+        rgba(255, 255, 255, 0.3) 50%,
+        transparent 70%
+      );
+      animation: shine 3s infinite;
+    }
+    
+    @keyframes shine {
+      0%, 100% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+      50% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+    }
+    
+    /* 滚动条样式 */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 10px;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #a8a8a8;
+    }
+    
+    /* 骨架屏动画 */
+    @keyframes skeleton-loading {
+      0% { background-position: -200px 0; }
+      100% { background-position: calc(200px + 100%) 0; }
+    }
+    
+    .skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200px 100%;
+      animation: skeleton-loading 1.5s infinite;
+    }
+    
+    /* 优化移动端触摸反馈 */
+    @media (hover: none) {
+      .card-hover:active {
+        transform: scale(0.98);
+      }
+      
+      .rank-item:active {
+        background-color: #f5f5f5;
+      }
+    }
+  </style>
+</head>
+
+<body class="bg-neutral-100 text-neutral-800 min-h-screen flex flex-col">
+  <!-- 顶部导航栏 - 优化响应式布局 -->
+  <header class="bg-white shadow-md sticky top-0 z-50 transition-all duration-300">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-3">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+        <!-- 标题和Logo -->
+        <div class="flex items-center space-x-2 sm:space-x-3">
+          <div class="bg-primary text-white p-2 rounded-lg shadow-sm">
+            <i class="fa fa-line-chart text-xl sm:text-2xl"></i>
+          </div>
+          <h1 class="text-lg sm:text-xl md:text-2xl font-bold text-neutral-800">
+            她语双十一<span class="text-primary">团队目标完成率</span>排行榜
+          </h1>
+        </div>
+        
+        <!-- 操作按钮组 - 优化移动端布局 -->
+        <div class="flex items-center gap-2 sm:gap-3">
+          <button id="refreshBtn" class="btn-secondary p-2 sm:p-2.5" title="刷新数据">
+            <i class="fa fa-refresh text-neutral-600"></i>
+          </button>
+          
+          <button id="themeToggle" class="btn-secondary p-2 sm:p-2.5 hidden sm:block" title="切换主题">
+            <i class="fa fa-moon-o text-neutral-600"></i>
+          </button>
+          
+          <button id="adminToggle" class="btn-primary text-sm flex items-center gap-1.5">
+            <i class="fa fa-cog"></i>
+            <span class="hidden sm:inline">管理</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主内容区 -->
+  <main class="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+    <!-- 顶部统计卡片 - 优化响应式 -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+      <!-- 倒计时卡片 -->
+      <div class="bg-gradient-to-r from-primary/90 to-primary rounded-xl shadow-lg p-5 sm:p-6 text-white card-hover animate-fadeIn">
+        <div class="flex justify-between items-start">
+          <div class="flex-1">
+            <h3 class="text-white/90 text-xs sm:text-sm font-medium mb-2">活动剩余时间</h3>
+            <div class="flex gap-2 sm:gap-3 mt-3" id="countdown">
+              <div class="bg-white/20 backdrop-blur-sm rounded-lg w-12 h-12 sm:w-14 sm:h-14 flex flex-col items-center justify-center">
+                <span class="text-xl sm:text-2xl font-bold" id="days">05</span>
+                <span class="text-xs">天</span>
+              </div>
+              <div class="bg-white/20 backdrop-blur-sm rounded-lg w-12 h-12 sm:w-14 sm:h-14 flex flex-col items-center justify-center">
+                <span class="text-xl sm:text-2xl font-bold" id="hours">18</span>
+                <span class="text-xs">时</span>
+              </div>
+              <div class="bg-white/20 backdrop-blur-sm rounded-lg w-12 h-12 sm:w-14 sm:h-14 flex flex-col items-center justify-center">
+                <span class="text-xl sm:text-2xl font-bold" id="minutes">45</span>
+                <span class="text-xs">分</span>
+              </div>
+              <div class="bg-white/20 backdrop-blur-sm rounded-lg w-12 h-12 sm:w-14 sm:h-14 flex flex-col items-center justify-center">
+                <span class="text-xl sm:text-2xl font-bold" id="seconds">33</span>
+                <span class="text-xs">秒</span>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white/20 p-2.5 sm:p-3 rounded-full">
+            <i class="fa fa-clock-o text-xl sm:text-2xl"></i>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 达成率卡片 -->
+      <div class="bg-white rounded-xl shadow-md p-5 sm:p-6 card-hover animate-fadeIn" style="animation-delay: 0.1s">
+        <div class="flex justify-between items-start">
+          <div class="flex-1">
+            <h3 class="text-neutral-500 text-xs sm:text-sm font-medium mb-1">总体目标达成率</h3>
+            <div class="flex items-end gap-2 mt-2">
+              <span class="text-2xl sm:text-3xl font-bold number-scroll" id="overallRate">67.8</span>
+              <span class="text-neutral-600 text-sm mb-1">%</span>
+            </div>
+            <div class="mt-3 w-full progress-bar">
+              <div class="progress-value bg-gradient-to-r from-primary to-primary/80" id="overallProgressBar" style="width: 67.8%"></div>
+            </div>
+          </div>
+          <div class="bg-primary/10 p-2.5 sm:p-3 rounded-full text-primary">
+            <i class="fa fa-tasks text-xl sm:text-2xl"></i>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 团队数量卡片 -->
+      <div class="bg-white rounded-xl shadow-md p-5 sm:p-6 card-hover animate-fadeIn sm:col-span-2 lg:col-span-1" style="animation-delay: 0.2s">
+        <div class="flex justify-between items-start">
+          <div class="flex-1">
+            <h3 class="text-neutral-500 text-xs sm:text-sm font-medium mb-1">参与团队数</h3>
+            <div class="flex items-end gap-2 mt-2">
+              <span class="text-2xl sm:text-3xl font-bold number-scroll" id="teamCount">24</span>
+              <span class="text-neutral-600 text-sm mb-1">个</span>
+            </div>
+          </div>
+          <div class="bg-secondary/10 p-2.5 sm:p-3 rounded-full text-secondary">
+            <i class="fa fa-users text-xl sm:text-2xl"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 主要内容：排行榜和图表 -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+      <!-- 左侧：排行榜区域 - 重点优化 -->
+      <div class="lg:col-span-2 space-y-4 sm:space-y-6">
+        <!-- 排行榜主卡片 -->
+        <div class="bg-white rounded-xl shadow-md p-4 sm:p-6 animate-slideUp">
+          <!-- 排行榜标题和筛选 -->
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+            <h2 class="text-lg sm:text-xl font-bold text-neutral-800 flex items-center gap-2">
+              <i class="fa fa-trophy text-secondary"></i>
+              团队目标完成率排行榜
+            </h2>
+            <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+              <button class="ranking-filter btn-primary text-xs sm:text-sm flex-1 sm:flex-none">
+                达成率
+              </button>
+              <button class="ranking-filter btn-secondary text-xs sm:text-sm flex-1 sm:flex-none">
+                环比增长
+              </button>
+              <button class="ranking-filter btn-secondary text-xs sm:text-sm flex-1 sm:flex-none">
+                团队规模
+              </button>
+            </div>
+          </div>
+          
+          <!-- 前三名特殊展示 - 优化移动端布局，修复奖杯裁剪问题，底部对齐 -->
+          <div id="topThreeContainer" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 sm:mb-10 pt-8 sm:items-end">
+            <!-- 动态生成 -->
+          </div>
+          
+          <!-- 排行榜列表 - 优化间距和可读性 -->
+          <div class="space-y-2 sm:space-y-3 max-h-[400px] sm:max-h-[500px] overflow-y-auto pr-1 sm:pr-2 custom-scrollbar" id="rankingList">
+            <!-- 动态生成 -->
+          </div>
+        </div>
+        
+        <!-- 团队趋势对比 -->
+        <div class="bg-white rounded-xl shadow-md p-4 sm:p-6 animate-slideUp" style="animation-delay: 0.1s">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 sm:mb-6">
+            <h2 class="text-lg sm:text-xl font-bold text-neutral-800 flex items-center gap-2">
+              <i class="fa fa-line-chart text-primary"></i>
+              团队业绩趋势
+            </h2>
+            <div class="relative w-full sm:w-auto">
+              <select id="teamComparison" class="input-field text-sm pr-8 appearance-none cursor-pointer">
+                <option value="top3">前三名团队</option>
+                <option value="all">所有团队平均</option>
+                <option value="custom">自定义选择</option>
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-neutral-600">
+                <i class="fa fa-chevron-down text-xs"></i>
+              </div>
+            </div>
+          </div>
+          <div class="h-[250px] sm:h-[300px]">
+            <canvas id="trendChart"></canvas>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 右侧：数据统计 -->
+      <div class="space-y-4 sm:space-y-6">
+        <!-- 实时公告 -->
+        <div class="bg-white rounded-xl shadow-md p-4 sm:p-6 animate-slideUp" style="animation-delay: 0.2s">
+          <h2 class="text-lg sm:text-xl font-bold text-neutral-800 mb-4 sm:mb-6 flex items-center gap-2">
+            <i class="fa fa-bullhorn text-primary"></i>
+            实时公告
+          </h2>
+          <div id="announcementContainer" class="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar">
+            <!-- 动态生成公告列表 -->
+          </div>
+          <div id="emptyAnnouncement" class="hidden text-center py-8 text-neutral-400">
+            <i class="fa fa-bell-slash text-4xl mb-2"></i>
+            <p class="text-sm">暂无公告</p>
+          </div>
+        </div>
+        
+        <!-- 达成率分布 -->
+        <div class="bg-white rounded-xl shadow-md p-4 sm:p-6 animate-slideUp" style="animation-delay: 0.3s">
+          <h2 class="text-lg sm:text-xl font-bold text-neutral-800 mb-4 sm:mb-6 flex items-center gap-2">
+            <i class="fa fa-bar-chart text-secondary"></i>
+            达成率分布
+          </h2>
+          <div class="h-[180px] sm:h-[200px]">
+            <canvas id="achievementChart"></canvas>
+          </div>
+          <div class="mt-4 text-xs sm:text-sm text-neutral-500 text-center bg-neutral-50 rounded-lg p-3">
+            <p>平均达成率：<span class="font-semibold text-neutral-800" id="avgRate">67.8</span>%</p>
+            <p class="mt-1">最高达成率：<span class="font-semibold text-success" id="maxRate">128.3</span>%</p>
+          </div>
+        </div>
+        
+        <!-- 表现最佳团队 -->
+        <div class="bg-white rounded-xl shadow-md p-4 sm:p-6 animate-slideUp" style="animation-delay: 0.4s">
+          <h2 class="text-lg sm:text-xl font-bold text-neutral-800 mb-4 flex items-center gap-2">
+            <i class="fa fa-star text-secondary"></i>
+            <span id="bestTeamTitle">表现最佳团队</span>
+          </h2>
+          <div class="space-y-3 sm:space-y-4" id="bestTeamsContainer">
+            <!-- 动态生成 -->
+          </div>
+          <div id="emptyBestTeams" class="hidden text-center py-8 text-neutral-400">
+            <i class="fa fa-trophy text-4xl mb-2"></i>
+            <p class="text-sm">暂未设置奖项</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 后台管理区域 - 优化表格布局 -->
+    <div id="adminPanel" class="hidden mt-6 sm:mt-8 animate-fadeIn">
+      <!-- 快速数据录入 -->
+      <div class="bg-white rounded-xl shadow-md p-4 sm:p-6 mb-4 sm:mb-6">
+        <h3 class="text-base sm:text-lg font-bold mb-4 flex items-center gap-2">
+          <i class="fa fa-database text-primary"></i>
+          快速数据录入
+        </h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div>
+            <label class="block text-xs sm:text-sm font-medium text-neutral-700 mb-1">团队名称</label>
+            <input type="text" id="quickTeamName" placeholder="输入团队名称" class="input-field text-sm">
+          </div>
+          <div>
+            <label class="block text-xs sm:text-sm font-medium text-neutral-700 mb-1">所属渠道</label>
+            <select id="quickTeamChannel" class="input-field text-sm">
+              <option value="直播部">直播部</option>
+              <option value="视频部">视频部</option>
+              <option value="品牌部">品牌部</option>
+              <option value="设计部">设计部</option>
+              <option value="平台运营">平台运营</option>
+              <option value="客服部">客服部</option>
+              <option value="商务部">商务部</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs sm:text-sm font-medium text-neutral-700 mb-1">达成率 (%)</label>
+            <input type="number" step="0.1" id="quickTeamRate" placeholder="输入达成率" class="input-field text-sm">
+          </div>
+          <div class="flex items-end">
+            <button id="quickAddTeamBtn" class="w-full btn-primary text-sm flex items-center justify-center gap-2">
+              <i class="fa fa-plus"></i>
+              <span>添加团队</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 管理面板主体 -->
+      <div class="bg-white rounded-xl shadow-md p-4 sm:p-6">
+        <div class="flex justify-between items-center mb-4 sm:mb-6">
+          <h2 class="text-lg sm:text-xl font-bold text-neutral-800 flex items-center gap-2">
+            <i class="fa fa-cog text-primary"></i>
+            后台管理
+          </h2>
+          <button id="closeAdminPanel" class="text-neutral-500 hover:text-neutral-700 p-2">
+            <i class="fa fa-times text-xl"></i>
+          </button>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          <!-- 数据编辑表格 - 优化移动端显示 -->
+          <div class="border border-neutral-200 rounded-lg p-3 sm:p-5 lg:col-span-2">
+            <h3 class="text-base sm:text-lg font-semibold mb-4 flex items-center gap-2">
+              <i class="fa fa-table text-primary"></i>
+              团队数据编辑
+            </h3>
+            
+            <div class="overflow-x-auto -mx-3 sm:mx-0">
+              <div class="inline-block min-w-full align-middle">
+                <table class="min-w-full divide-y divide-neutral-200">
+                  <thead>
+                    <tr class="bg-neutral-50">
+                      <th class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">排名</th>
+                      <th class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">头像</th>
+                      <th class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">团队名称</th>
+                      <th class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">团队口号</th>
+                      <th class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">渠道</th>
+                      <th class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">达成率(%)</th>
+                      <th class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">变动</th>
+                      <th class="px-3 sm:px-4 py-3 text-right text-xs font-medium text-neutral-500 uppercase tracking-wider">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody id="editableTeamTable" class="bg-white divide-y divide-neutral-200 text-sm">
+                    <!-- 动态生成 -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+            <div class="mt-4 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
+              <button id="addRowBtn" class="btn-secondary flex items-center justify-center gap-2 text-sm">
+                <i class="fa fa-plus"></i>
+                <span>添加新团队</span>
+              </button>
+              <button id="saveDataBtn" class="bg-success hover:bg-success/90 text-white px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm">
+                <i class="fa fa-save"></i>
+                <span>保存更改</span>
+              </button>
+            </div>
+          </div>
+          
+          <!-- 系统设置 -->
+          <div class="border border-neutral-200 rounded-lg p-3 sm:p-5 lg:col-span-2">
+            <h3 class="text-base sm:text-lg font-semibold mb-4 flex items-center gap-2">
+              <i class="fa fa-sliders text-primary"></i>
+              系统设置
+            </h3>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs sm:text-sm font-medium text-neutral-700 mb-1">自动刷新间隔 (秒)</label>
+                <input type="number" id="refreshInterval" value="30" min="10" max="600" class="input-field text-sm">
+              </div>
+              
+              <div>
+                <label class="block text-xs sm:text-sm font-medium text-neutral-700 mb-1">数据来源</label>
+                <select id="dataSource" class="input-field text-sm">
+                  <option value="local">本地数据</option>
+                  <option value="api">API接口</option>
+                  <option value="manual">手动输入</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-xs sm:text-sm font-medium text-neutral-700 mb-1">排行榜显示数量</label>
+                <input type="number" id="rankingCount" value="10" min="5" max="50" class="input-field text-sm">
+              </div>
+              
+              <div class="sm:col-span-2">
+                <label class="block text-xs sm:text-sm font-medium text-neutral-700 mb-1 flex items-center gap-2">
+                  <i class="fa fa-calendar text-primary"></i>
+                  活动结束时间
+                </label>
+                <div class="flex gap-2">
+                  <input type="datetime-local" id="activityEndTime" class="input-field text-sm flex-1">
+                  <button id="resetEndTimeBtn" class="btn-secondary text-sm px-3 whitespace-nowrap" title="重置为默认时间">
+                    <i class="fa fa-refresh mr-1"></i>
+                    重置
+                  </button>
+                </div>
+                <p class="text-xs text-neutral-500 mt-1">
+                  <i class="fa fa-info-circle"></i>
+                  默认时间：2024-11-11 23:59:59
+                </p>
+              </div>
+              
+              <div class="flex items-center gap-2">
+                <input type="checkbox" id="enableAnimation" checked class="w-4 h-4 text-primary border-neutral-300 rounded focus:ring-primary">
+                <label for="enableAnimation" class="text-xs sm:text-sm text-neutral-700">启用动画效果</label>
+              </div>
+              
+              <div class="flex items-center gap-2">
+                <input type="checkbox" id="enableNotification" class="w-4 h-4 text-primary border-neutral-300 rounded focus:ring-primary">
+                <label for="enableNotification" class="text-xs sm:text-sm text-neutral-700">启用数据变动通知</label>
+              </div>
+              
+              <div class="sm:col-span-2">
+                <button id="saveSettingsBtn" class="w-full btn-primary text-sm">
+                  <i class="fa fa-save mr-2"></i>
+                  保存设置
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 数据导入导出 -->
+          <div class="border border-neutral-200 rounded-lg p-3 sm:p-5 lg:col-span-2 mt-4">
+            <h3 class="text-base sm:text-lg font-semibold mb-4 flex items-center gap-2">
+              <i class="fa fa-exchange text-primary"></i>
+              数据导入导出
+            </h3>
+            
+            <div class="space-y-4">
+              <!-- 导出功能 -->
+              <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 class="text-sm font-semibold text-blue-800 mb-2 flex items-center gap-2">
+                  <i class="fa fa-download"></i>
+                  导出数据
+                </h4>
+                <p class="text-xs text-blue-700 mb-3">
+                  将所有数据（团队、公告、趋势、奖项等）导出为JSON文件，可分享给他人或用于备份。
+                </p>
+                <button id="exportDataBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm">
+                  <i class="fa fa-download"></i>
+                  <span>导出所有数据</span>
+                </button>
+              </div>
+              
+              <!-- 导入功能 -->
+              <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h4 class="text-sm font-semibold text-green-800 mb-2 flex items-center gap-2">
+                  <i class="fa fa-upload"></i>
+                  导入数据
+                </h4>
+                <p class="text-xs text-green-700 mb-3">
+                  从DROP_JSON_FILE_PLACE中导入数据，将覆盖当前本地所有数据，请谨慎操作。
+                </p>
+                <input type="file" id="importDataInput" accept=".json" class="hidden">
+                <button id="importDataBtn" class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm">
+                  <i class="fa fa-upload"></i>
+                  <span>选择文件导入</span>
+                </button>
+              </div>
+              
+              <!-- 清空数据 -->
+              <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                <h4 class="text-sm font-semibold text-red-800 mb-2 flex items-center gap-2">
+                  <i class="fa fa-trash"></i>
+                  清空数据
+                </h4>
+                <p class="text-xs text-red-700 mb-3">
+                  清空所有本地存储的数据，恢复到初始状态，此操作不可恢复！
+                </p>
+                <button id="clearAllDataBtn" class="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm">
+                  <i class="fa fa-trash"></i>
+                  <span>清空所有数据</span>
+                </button>
+              </div>
+              
+              <!-- 使用说明 -->
+              <div class="bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-xs text-neutral-600">
+                <p class="font-semibold mb-2">💡 使用说明：</p>
+                <ul class="space-y-1 ml-4 list-disc">
+                  <li><strong>导出数据：</strong>点击后会下载一个JSON文件，包含所有团队、公告、趋势等数据</li>
+                  <li><strong>分享数据：</strong>将导出的JSON文件发送给他人，他们导入后即可看到相同数据</li>
+                  <li><strong>备份数据：</strong>定期导出数据，防止数据丢失</li>
+                  <li><strong>导入数据：</strong>选择之前导出的JSON文件，即可恢复数据</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 趋势数据编辑 -->
+          <div class="border border-neutral-200 rounded-lg p-3 sm:p-5 lg:col-span-2 mt-4">
+            <h3 class="text-base sm:text-lg font-semibold mb-4 flex items-center gap-2">
+              <i class="fa fa-line-chart text-primary"></i>
+              趋势数据编辑
+            </h3>
+            
+            <div class="space-y-4">
+              <!-- 日期管理 -->
+              <div>
+                <div class="flex justify-between items-center mb-2">
+                  <label class="block text-xs sm:text-sm font-medium text-neutral-700">
+                    日期节点
+                    <span id="trendDateCount" class="text-neutral-500 font-normal ml-1">(7个)</span>
+                  </label>
+                  <div class="flex gap-2">
+                    <button id="addTrendDateBtn" class="btn-secondary text-sm px-3 py-1.5 flex items-center gap-1">
+                      <i class="fa fa-plus"></i>
+                      <span>添加日期</span>
+                    </button>
+                    <button id="resetTrendDatesBtn" class="btn-secondary text-sm px-3 py-1.5 flex items-center gap-1">
+                      <i class="fa fa-refresh"></i>
+                      <span>重置默认</span>
+                    </button>
+                  </div>
+                </div>
+                <div id="trendDatesList" class="flex flex-wrap gap-2 bg-neutral-50 rounded-lg p-3">
+                  <!-- 动态生成日期标签 -->
+                </div>
+              </div>
+              
+              <!-- 趋势数据表格 -->
+              <div>
+                <label class="block text-xs sm:text-sm font-medium text-neutral-700 mb-2">
+                  团队趋势数据
+                  <span class="text-neutral-500 font-normal ml-2">(输入百分比数值)</span>
+                </label>
+                <div class="overflow-x-auto -mx-3 sm:mx-0">
+                  <div class="inline-block min-w-full align-middle">
+                    <div id="trendDataTable" class="bg-neutral-50 rounded-lg p-3 max-h-96 overflow-y-auto custom-scrollbar">
+                      <!-- 动态生成趋势数据表格 -->
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 操作按钮 -->
+              <div class="flex gap-3 pt-2">
+                <button id="saveTrendDataBtn" class="flex-1 bg-success hover:bg-success/90 text-white px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm">
+                  <i class="fa fa-save"></i>
+                  <span>保存趋势数据</span>
+                </button>
+                <button id="autoGenerateTrendBtn" class="btn-secondary text-sm px-4 py-2 flex items-center gap-2">
+                  <i class="fa fa-magic"></i>
+                  <span>智能生成</span>
+                </button>
+              </div>
+              
+              <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-700">
+                <i class="fa fa-info-circle mr-1"></i>
+                <strong>提示：</strong>
+                <ul class="mt-1 ml-4 list-disc space-y-1">
+                  <li>趋势数据会自动同步团队基本信息（团队增删、改名等）</li>
+                  <li>点击“智能生成”可根据当前达成率自动生成趋势数据</li>
+                  <li>日期标签可点击删除，至少保留两个日期</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 公告管理 -->
+          <div class="border border-neutral-200 rounded-lg p-3 sm:p-5 lg:col-span-2 mt-4">
+            <h3 class="text-base sm:text-lg font-semibold mb-4 flex items-center gap-2">
+              <i class="fa fa-bullhorn text-primary"></i>
+              公告管理
+            </h3>
+            
+            <div class="space-y-4">
+              <!-- 公告编辑框 -->
+              <div>
+                <label class="block text-xs sm:text-sm font-medium text-neutral-700 mb-2">
+                  公告内容
+                  <span class="text-neutral-500 font-normal ml-2">(最多500字)</span>
+                </label>
+                <textarea 
+                  id="announcementInput" 
+                  rows="4" 
+                  maxlength="500"
+                  placeholder="请输入公告内容..." 
+                  class="input-field text-sm resize-none"
+                ></textarea>
+                <div class="flex justify-between items-center mt-1">
+                  <span class="text-xs text-neutral-500">
+                    <i class="fa fa-info-circle"></i>
+                    最多保留最近20条公告
+                  </span>
+                  <span id="announcementCharCount" class="text-xs text-neutral-500">0/500</span>
+                </div>
+              </div>
+              
+              <!-- 操作按钮 -->
+              <div class="flex gap-3">
+                <button id="publishAnnouncementBtn" class="flex-1 bg-success hover:bg-success/90 text-white px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm">
+                  <i class="fa fa-send"></i>
+                  <span>发布公告</span>
+                </button>
+                <button id="clearAnnouncementsBtn" class="btn-secondary flex items-center gap-2 text-sm">
+                  <i class="fa fa-trash"></i>
+                  <span>清除历史</span>
+                </button>
+              </div>
+              
+              <!-- 公告历史列表 -->
+              <div>
+                <div class="flex justify-between items-center mb-2">
+                  <label class="block text-xs sm:text-sm font-medium text-neutral-700">
+                    公告历史
+                    <span id="announcementCount" class="text-neutral-500 font-normal ml-1">(0条)</span>
+                  </label>
+                </div>
+                <div id="announcementHistoryList" class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar bg-neutral-50 rounded-lg p-3">
+                  <!-- 动态生成历史公告 -->
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 最佳团队奖项设置 -->
+          <div class="border border-neutral-200 rounded-lg p-3 sm:p-5 lg:col-span-2 mt-4">
+            <h3 class="text-base sm:text-lg font-semibold mb-4 flex items-center gap-2">
+              <i class="fa fa-trophy text-secondary"></i>
+              最佳团队奖项设置
+            </h3>
+            
+            <div class="space-y-4">
+              <!-- 奖项标题设置 -->
+              <div>
+                <label class="block text-xs sm:text-sm font-medium text-neutral-700 mb-2">
+                  板块标题
+                  <span class="text-neutral-500 font-normal ml-2">(如：表现最佳团队、优秀团队榜等)</span>
+                </label>
+                <input 
+                  type="text" 
+                  id="awardBlockTitle" 
+                  placeholder="请输入板块标题" 
+                  maxlength="20"
+                  class="input-field text-sm"
+                >
+              </div>
+              
+              <!-- 奖项列表 -->
+              <div>
+                <div class="flex justify-between items-center mb-2">
+                  <label class="block text-xs sm:text-sm font-medium text-neutral-700">
+                    奖项配置
+                    <span id="awardCount" class="text-neutral-500 font-normal ml-1">(0个)</span>
+                  </label>
+                  <button id="addAwardBtn" class="btn-secondary text-sm px-3 py-1.5 flex items-center gap-1">
+                    <i class="fa fa-plus"></i>
+                    <span>添加奖项</span>
+                  </button>
+                </div>
+                
+                <div id="awardsList" class="space-y-3 max-h-96 overflow-y-auto custom-scrollbar bg-neutral-50 rounded-lg p-3">
+                  <!-- 动态生成奖项配置项 -->
+                </div>
+              </div>
+              
+              <!-- 保存按钮 -->
+              <div class="flex gap-3 pt-2">
+                <button id="saveAwardsBtn" class="flex-1 bg-success hover:bg-success/90 text-white px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm">
+                  <i class="fa fa-save"></i>
+                  <span>保存奖项设置</span>
+                </button>
+                <button id="resetAwardsBtn" class="btn-secondary text-sm px-4 py-2 flex items-center gap-2">
+                  <i class="fa fa-refresh"></i>
+                  <span>恢复默认</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 页脚 -->
+  <footer class="bg-white border-t border-neutral-200 py-4 sm:py-6 mt-8 sm:mt-12">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center text-neutral-500 text-xs sm:text-sm">
+      <p>&copy; 2025 她语双十一团队目标完成率排行榜 | 数据更新时间: <span id="lastUpdateTime">2024-11-05 14:30:25</span></p>
+    </div>
+  </footer>
+
+  <!-- 消息提示容器 -->
+  <div id="messageContainer" class="fixed bottom-4 right-4 z-50 space-y-2 max-w-sm"></div>
+
+  <!-- JavaScript -->
+  <script>
+    // 全局变量
+    let teamData = [];
+    let charts = {};
+    let isEventListenersSetup = false;
+    let autoRefreshTimer = null;
+    let countdownTimer = null;
+    const DEFAULT_END_TIME = '2024-11-11T23:59:59';
+    let announcements = [];
+    const MAX_ANNOUNCEMENTS = 20;
+    let awards = [];
+    const DEFAULT_AWARD_TITLE = '表现最佳团队';
+    let trendData = {}; // 存储趋势数据
+    let trendDates = []; // 存储日期节点
+    
+    // 加载趋势数据
+    function loadTrendData() {
+      const saved = localStorage.getItem('trendData');
+      if (saved) {
+        const data = JSON.parse(saved);
+        trendDates = data.dates || getDefaultTrendDates();
+        trendData = data.teamData || {};
+        
+        // 确保所有团队都有趋势数据
+        syncTrendDataWithTeams();
+      } else {
+        // 初始化默认数据
+        trendDates = getDefaultTrendDates();
+        initializeTrendData();
+      }
+    }
+
+    // 获取默认日期节点（最近7天）
+    function getDefaultTrendDates() {
+      const dates = [];
+      const today = new Date();
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        const dateStr = `${date.getMonth() + 1}/${date.getDate()}`;
+        dates.push(dateStr);
+      }
+      return dates;
+    }
+
+    // 初始化趋势数据
+    function initializeTrendData() {
+      trendData = {};
+      teamData.forEach(team => {
+        trendData[team.id] = generateTrendDataForTeam(team.rate);
+      });
+    }
+
+    // 为单个团队生成趋势数据
+    function generateTrendDataForTeam(currentRate) {
+      const data = [];
+      let rate = currentRate * 0.5; // 从50%开始
+      for (let i = 0; i < trendDates.length; i++) {
+        data.push(Math.round(rate * 10) / 10);
+        rate += (currentRate - rate) / (trendDates.length - i);
+      }
+      return data;
+    }
+
+    // 同步趋势数据与团队数据
+    function syncTrendDataWithTeams() {
+      // 删除已不存在的团队
+      const teamIds = teamData.map(t => t.id);
+      Object.keys(trendData).forEach(id => {
+        if (!teamIds.includes(parseInt(id))) {
+          delete trendData[id];
+        }
+      });
+      
+      // 为新团队添加趋势数据
+      teamData.forEach(team => {
+        if (!trendData[team.id]) {
+          trendData[team.id] = generateTrendDataForTeam(team.rate);
+        }
+      });
+    }
+
+    // 保存趋势数据
+    function saveTrendData() {
+      const data = {
+        dates: trendDates,
+        teamData: trendData
+      };
+      localStorage.setItem('trendData', JSON.stringify(data));
+    }
+
+    // 渲染日期列表
+    function renderTrendDates() {
+      const container = document.getElementById('trendDatesList');
+      const countElement = document.getElementById('trendDateCount');
+      
+      countElement.textContent = `(${trendDates.length}个)`;
+      
+      let html = '';
+      trendDates.forEach((date, index) => {
+        html += `
+          <div class="inline-flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-neutral-200 text-sm">
+            <span>${date}</span>
+            ${trendDates.length > 2 ? `
+              <button class="delete-date-btn text-primary hover:text-primary/80" data-index="${index}" title="删除">
+                <i class="fa fa-times"></i>
+              </button>
+            ` : ''}
+          </div>
+        `;
+      });
+      
+      container.innerHTML = html;
+      
+      // 绑定删除事件
+      container.querySelectorAll('.delete-date-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const index = parseInt(this.dataset.index);
+          deleteTrendDate(index);
+        });
+      });
+    }
+
+    // 渲染趋势数据表格
+    function renderTrendDataTable() {
+      const container = document.getElementById('trendDataTable');
+      
+      if (teamData.length === 0) {
+        container.innerHTML = '<div class="text-center text-neutral-400 py-6 text-sm">暂无团队数据</div>';
+        return;
+      }
+      
+      let html = '<table class="min-w-full bg-white rounded-lg overflow-hidden text-sm">';
+      
+      // 表头
+      html += '<thead class="bg-neutral-100">';
+      html += '<tr>';
+      html += '<th class="px-3 py-2 text-left text-xs font-medium text-neutral-600 sticky left-0 bg-neutral-100">团队名称</th>';
+      trendDates.forEach(date => {
+        html += `<th class="px-3 py-2 text-center text-xs font-medium text-neutral-600 whitespace-nowrap">${date}</th>`;
+      });
+      html += '</tr>';
+      html += '</thead>';
+      
+      // 表体
+      html += '<tbody class="divide-y divide-neutral-200">';
+      teamData.forEach(team => {
+        html += '<tr class="hover:bg-neutral-50">';
+        html += `<td class="px-3 py-2 font-medium text-neutral-800 sticky left-0 bg-white">${team.name}</td>`;
+        
+        const teamTrendData = trendData[team.id] || [];
+        trendDates.forEach((date, dateIndex) => {
+          const value = teamTrendData[dateIndex] || 0;
+          html += `
+            <td class="px-2 py-2">
+              <input 
+                type="number" 
+                step="0.1" 
+                class="trend-data-input input-field text-sm py-1 w-20 text-center" 
+                value="${value}" 
+                data-team-id="${team.id}"
+                data-date-index="${dateIndex}"
+                placeholder="0.0"
+              >
+            </td>
+          `;
+        });
+        html += '</tr>';
+      });
+      html += '</tbody>';
+      html += '</table>';
+      
+      container.innerHTML = html;
+      
+      // 绑定输入事件
+      container.querySelectorAll('.trend-data-input').forEach(input => {
+        input.addEventListener('input', function() {
+          const teamId = parseInt(this.dataset.teamId);
+          const dateIndex = parseInt(this.dataset.dateIndex);
+          const value = parseFloat(this.value) || 0;
+          
+          if (!trendData[teamId]) {
+            trendData[teamId] = [];
+          }
+          trendData[teamId][dateIndex] = value;
+        });
+      });
+    }
+
+    // 添加日期节点
+    function addTrendDate() {
+      const dateInput = prompt('请输入日期（格式：M/D，如：11/6）：');
+      if (!dateInput) return;
+      
+      const dateRegex = /^(\d{1,2})\/(\d{1,2})$/;
+      if (!dateRegex.test(dateInput.trim())) {
+        showMessage('日期格式不正确，请使用 M/D 格式', 'error');
+        return;
+      }
+      
+      trendDates.push(dateInput.trim());
+      
+      // 为所有团队添加该日期的数据（默认0）
+      Object.keys(trendData).forEach(teamId => {
+        trendData[teamId].push(0);
+      });
+      
+      renderTrendDates();
+      renderTrendDataTable();
+      showMessage('日期节点已添加', 'success');
+    }
+
+    // 删除日期节点
+    function deleteTrendDate(index) {
+      if (trendDates.length <= 2) {
+        showMessage('至少需要保留两个日期节点', 'error');
+        return;
+      }
+      
+      if (confirm(`确定要删除日期 "${trendDates[index]}" 吗？`)) {
+        trendDates.splice(index, 1);
+        
+        // 删除所有团队该日期的数据
+        Object.keys(trendData).forEach(teamId => {
+          trendData[teamId].splice(index, 1);
+        });
+        
+        renderTrendDates();
+        renderTrendDataTable();
+        showMessage('日期节点已删除', 'success');
+      }
+    }
+
+    // 重置日期为默认（最近7天）
+    function resetTrendDates() {
+      if (confirm('确定要重置为默认日期（最近7天）吗？当前趋势数据将被清空！')) {
+        trendDates = getDefaultTrendDates();
+        initializeTrendData();
+        renderTrendDates();
+        renderTrendDataTable();
+        showMessage('已重置为默认日期', 'success');
+      }
+    }
+
+    // 智能生成趋势数据
+    function autoGenerateTrendData() {
+      if (confirm('确定要根据当前达成率自动生成趋势数据吗？当前手动输入的数据将被覆盖！')) {
+        initializeTrendData();
+        renderTrendDataTable();
+        showMessage('趋势数据已智能生成', 'success');
+      }
+    }
+
+    // 保存趋势数据并更新图表
+    function saveTrendDataAndUpdateChart() {
+      // 验证数据
+      for (const teamId in trendData) {
+        const data = trendData[teamId];
+        if (data.length !== trendDates.length) {
+          showMessage('数据长度不一致，请检查', 'error');
+          return;
+        }
+      }
+      
+      saveTrendData();
+      updateTrendChart('top3'); // 更新图表
+      showMessage('趋势数据已保存，图表已更新', 'success');
+    }
+
+    // 加载奖项数据
+    function loadAwards() {
+      const saved = localStorage.getItem('awards');
+      if (saved) {
+        const data = JSON.parse(saved);
+        awards = data.awards || [];
+        document.getElementById('awardBlockTitle').value = data.blockTitle || DEFAULT_AWARD_TITLE;
+      } else {
+        // 默认奖项设置
+        awards = [
+          { id: 1, name: '金牌团队', icon: 'trophy', color: 'text-secondary', bg: 'bg-secondary/10' },
+          { id: 2, name: '银牌团队', icon: 'star', color: 'text-neutral-400', bg: 'bg-neutral-200' },
+          { id: 3, name: '铜牌团队', icon: 'certificate', color: 'text-amber-700', bg: 'bg-amber-100' }
+        ];
+        document.getElementById('awardBlockTitle').value = DEFAULT_AWARD_TITLE;
+      }
+    }
+
+    // 保存奖项数据
+    function saveAwards() {
+      const blockTitle = document.getElementById('awardBlockTitle').value.trim() || DEFAULT_AWARD_TITLE;
+      const data = {
+        blockTitle: blockTitle,
+        awards: awards
+      };
+      localStorage.setItem('awards', JSON.stringify(data));
+    }
+
+    // 获取可用的图标列表
+    function getAwardIcons() {
+      return [
+        { value: 'trophy', label: '奖杯', icon: 'fa-trophy' },
+        { value: 'star', label: '星星', icon: 'fa-star' },
+        { value: 'certificate', label: '证书', icon: 'fa-certificate' },
+        { value: 'medal', label: '奖牌', icon: 'fa-shield' },
+        { value: 'crown', label: '皇冠', icon: 'fa-diamond' },
+        { value: 'heart', label: '爱心', icon: 'fa-heart' },
+        { value: 'flag', label: '旗帜', icon: 'fa-flag' },
+        { value: 'gift', label: '礼物', icon: 'fa-gift' }
+      ];
+    }
+
+    // 获取可用的颜色列表
+    function getAwardColors() {
+      return [
+        { value: 'text-secondary', bg: 'bg-secondary/10', label: '金色' },
+        { value: 'text-neutral-400', bg: 'bg-neutral-200', label: '银色' },
+        { value: 'text-amber-700', bg: 'bg-amber-100', label: '铜色' },
+        { value: 'text-primary', bg: 'bg-primary/10', label: '红色' },
+        { value: 'text-success', bg: 'bg-success/10', label: '绿色' },
+        { value: 'text-blue-500', bg: 'bg-blue-50', label: '蓝色' },
+        { value: 'text-purple-500', bg: 'bg-purple-50', label: '紫色' },
+        { value: 'text-pink-500', bg: 'bg-pink-50', label: '粉色' }
+      ];
+    }
+
+    // 渲染奖项配置列表
+    function renderAwardsList() {
+      const container = document.getElementById('awardsList');
+      const countElement = document.getElementById('awardCount');
+      
+      countElement.textContent = `(${awards.length}个)`;
+      
+      if (awards.length === 0) {
+        container.innerHTML = '<div class="text-center text-neutral-400 py-6 text-sm">暂无奖项配置，点击上方"添加奖项"按钮开始设置</div>';
+        return;
+      }
+      
+      const icons = getAwardIcons();
+      const colors = getAwardColors();
+      
+      let html = '';
+      awards.forEach((award, index) => {
+        const selectedIcon = icons.find(i => i.value === award.icon) || icons[0];
+        const selectedColor = colors.find(c => c.value === award.color) || colors[0];
+        
+        html += `
+          <div class="bg-white p-4 rounded-lg border border-neutral-200 hover:border-primary/50 transition-colors">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="flex-shrink-0 text-neutral-500">
+                <i class="fa fa-bars cursor-move"></i>
+              </div>
+              <div class="flex-1 font-medium text-sm text-neutral-700">
+                奖项 #${index + 1}
+              </div>
+              <button class="delete-award-btn text-primary hover:text-primary/80 transition-colors" data-index="${index}" title="删除">
+                <i class="fa fa-trash"></i>
+              </button>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs text-neutral-600 mb-1">奖项名称</label>
+                <input 
+                  type="text" 
+                  class="award-name-input input-field text-sm py-1.5" 
+                  value="${award.name}" 
+                  data-index="${index}"
+                  placeholder="如：金牌团队"
+                  maxlength="20"
+                >
+              </div>
+              
+              <div>
+                <label class="block text-xs text-neutral-600 mb-1">指定团队</label>
+                <select class="award-team-select input-field text-sm py-1.5" data-index="${index}">
+                  <option value="">自动分配(按排名)</option>
+                  ${teamData.map(team => `
+                    <option value="${team.id}" ${award.teamId === team.id ? 'selected' : ''}>
+                      ${team.name}
+                    </option>
+                  `).join('')}
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-xs text-neutral-600 mb-1">图标</label>
+                <select class="award-icon-select input-field text-sm py-1.5" data-index="${index}">
+                  ${icons.map(icon => `
+                    <option value="${icon.value}" ${award.icon === icon.value ? 'selected' : ''}>
+                      ${icon.label}
+                    </option>
+                  `).join('')}
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-xs text-neutral-600 mb-1">颜色</label>
+                <select class="award-color-select input-field text-sm py-1.5" data-index="${index}">
+                  ${colors.map(color => `
+                    <option value="${color.value}" data-bg="${color.bg}" ${award.color === color.value ? 'selected' : ''}>
+                      ${color.label}
+                    </option>
+                  `).join('')}
+                </select>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      
+      container.innerHTML = html;
+      
+      // 绑定事件
+      setupAwardInputListeners();
+    }
+
+    // 设置奖项输入事件监听
+    function setupAwardInputListeners() {
+      // 奖项名称输入
+      document.querySelectorAll('.award-name-input').forEach(input => {
+        input.addEventListener('input', function() {
+          const index = parseInt(this.dataset.index);
+          awards[index].name = this.value.trim();
+        });
+      });
+      
+      // 团队选择
+      document.querySelectorAll('.award-team-select').forEach(select => {
+        select.addEventListener('change', function() {
+          const index = parseInt(this.dataset.index);
+          awards[index].teamId = this.value ? parseInt(this.value) : null;
+        });
+      });
+      
+      // 图标选择
+      document.querySelectorAll('.award-icon-select').forEach(select => {
+        select.addEventListener('change', function() {
+          const index = parseInt(this.dataset.index);
+          awards[index].icon = this.value;
+        });
+      });
+      
+      // 颜色选择
+      document.querySelectorAll('.award-color-select').forEach(select => {
+        select.addEventListener('change', function() {
+          const index = parseInt(this.dataset.index);
+          const selectedOption = this.options[this.selectedIndex];
+          awards[index].color = this.value;
+          awards[index].bg = selectedOption.dataset.bg;
+        });
+      });
+      
+      // 删除按钮
+      document.querySelectorAll('.delete-award-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const index = parseInt(this.dataset.index);
+          deleteAward(index);
+        });
+      });
+    }
+
+    // 添加新奖项
+    function addNewAward() {
+      const newAward = {
+        id: Date.now(),
+        name: `新奖项${awards.length + 1}`,
+        teamId: null,
+        icon: 'trophy',
+        color: 'text-secondary',
+        bg: 'bg-secondary/10'
+      };
+      
+      awards.push(newAward);
+      renderAwardsList();
+      showMessage('已添加新奖项', 'success');
+    }
+
+    // 删除奖项
+    function deleteAward(index) {
+      if (confirm('确定要删除这个奖项吗？')) {
+        awards.splice(index, 1);
+        renderAwardsList();
+        showMessage('奖项已删除', 'success');
+      }
+    }
+
+    // 保存奖项设置
+    function saveAwardsSettings() {
+      const blockTitle = document.getElementById('awardBlockTitle').value.trim();
+      
+      if (!blockTitle) {
+        showMessage('请输入板块标题', 'error');
+        document.getElementById('awardBlockTitle').focus();
+        return;
+      }
+      
+      // 验证奖项名称
+      for (let i = 0; i < awards.length; i++) {
+        if (!awards[i].name || awards[i].name.trim() === '') {
+          showMessage(`请填写奖项 #${i + 1} 的名称`, 'error');
+          return;
+        }
+      }
+      
+      saveAwards();
+      renderBestTeams();
+      showMessage('奖项设置已保存', 'success');
+    }
+
+    // 重置奖项设置
+    function resetAwardsSettings() {
+      if (confirm('确定要恢复默认奖项设置吗？')) {
+        awards = [
+          { id: 1, name: '金牌团队', icon: 'trophy', color: 'text-secondary', bg: 'bg-secondary/10', teamId: null },
+          { id: 2, name: '银牌团队', icon: 'star', color: 'text-neutral-400', bg: 'bg-neutral-200', teamId: null },
+          { id: 3, name: '铜牌团队', icon: 'certificate', color: 'text-amber-700', bg: 'bg-amber-100', teamId: null }
+        ];
+        document.getElementById('awardBlockTitle').value = DEFAULT_AWARD_TITLE;
+        renderAwardsList();
+        saveAwards();
+        renderBestTeams();
+        showMessage('已恢复默认设置', 'success');
+      }
+    }
+
+    // 加载公告数据
+    function loadAnnouncements() {
+      const saved = localStorage.getItem('announcements');
+      if (saved) {
+        announcements = JSON.parse(saved);
+      } else {
+        announcements = [];
+      }
+    }
+
+    // 保存公告数据
+    function saveAnnouncements() {
+      localStorage.setItem('announcements', JSON.stringify(announcements));
+    }
+
+    // 获取相对时间
+    function getRelativeTime(timestamp) {
+      const now = Date.now();
+      const diff = now - timestamp;
+      
+      const seconds = Math.floor(diff / 1000);
+      const minutes = Math.floor(seconds / 60);
+      const hours = Math.floor(minutes / 60);
+      const days = Math.floor(hours / 24);
+      
+      if (seconds < 60) return '刚刚';
+      if (minutes < 60) return `${minutes}分钟前`;
+      if (hours < 24) return `${hours}小时前`;
+      if (days < 7) return `${days}天前`;
+      
+      const date = new Date(timestamp);
+      return date.toLocaleDateString('zh-CN');
+    }
+
+    // 渲染公告列表
+    function renderAnnouncements() {
+      const container = document.getElementById('announcementContainer');
+      const emptyState = document.getElementById('emptyAnnouncement');
+      
+      if (announcements.length === 0) {
+        container.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+        return;
+      }
+      
+      container.classList.remove('hidden');
+      emptyState.classList.add('hidden');
+      
+      let html = '';
+      // 显示最新的5条公告
+      const displayAnnouncements = announcements.slice(0, 5);
+      
+      displayAnnouncements.forEach((announcement, index) => {
+        const relativeTime = getRelativeTime(announcement.timestamp);
+        html += `
+          <div class="bg-gradient-to-r from-primary/5 to-transparent border-l-4 border-primary p-3 rounded-lg animate-fadeIn" style="animation-delay: ${index * 0.1}s">
+            <div class="flex items-start gap-2">
+              <i class="fa fa-volume-up text-primary mt-1 flex-shrink-0"></i>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm text-neutral-800 break-words">${escapeHtml(announcement.content)}</p>
+                <div class="flex items-center gap-2 mt-2">
+                  <span class="text-xs text-neutral-500">
+                    <i class="fa fa-clock-o mr-1"></i>${relativeTime}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      
+      container.innerHTML = html;
+    }
+
+    // 渲染公告历史列表（后台管理）
+    function renderAnnouncementHistory() {
+      const container = document.getElementById('announcementHistoryList');
+      const countElement = document.getElementById('announcementCount');
+      
+      countElement.textContent = `(${announcements.length}条)`;
+      
+      if (announcements.length === 0) {
+        container.innerHTML = '<div class="text-center text-neutral-400 py-4 text-sm">暂无历史公告</div>';
+        return;
+      }
+      
+      let html = '';
+      announcements.forEach((announcement, index) => {
+        const date = new Date(announcement.timestamp);
+        const dateStr = date.toLocaleString('zh-CN', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        
+        html += `
+          <div class="bg-white p-3 rounded-lg border border-neutral-200 hover:border-primary/50 transition-colors">
+            <div class="flex justify-between items-start gap-2">
+              <div class="flex-1 min-w-0">
+                <p class="text-xs sm:text-sm text-neutral-800 break-words">${escapeHtml(announcement.content)}</p>
+                <p class="text-xs text-neutral-500 mt-1">
+                  <i class="fa fa-clock-o mr-1"></i>${dateStr}
+                </p>
+              </div>
+              <button class="delete-announcement-btn text-primary hover:text-primary/80 transition-colors p-1 flex-shrink-0" data-index="${index}" title="删除">
+                <i class="fa fa-trash"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      });
+      
+      container.innerHTML = html;
+      
+      // 添加删除按钮事件
+      container.querySelectorAll('.delete-announcement-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const index = parseInt(this.dataset.index);
+          deleteAnnouncement(index);
+        });
+      });
+    }
+
+    // HTML转义
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // 发布公告
+    function publishAnnouncement() {
+      const input = document.getElementById('announcementInput');
+      const content = input.value.trim();
+      
+      if (!content) {
+        showMessage('请输入公告内容', 'error');
+        input.focus();
+        return;
+      }
+      
+      const announcement = {
+        id: Date.now(),
+        content: content,
+        timestamp: Date.now()
+      };
+      
+      // 添加到数组开头
+      announcements.unshift(announcement);
+      
+      // 保持最多20条
+      if (announcements.length > MAX_ANNOUNCEMENTS) {
+        announcements = announcements.slice(0, MAX_ANNOUNCEMENTS);
+      }
+      
+      saveAnnouncements();
+      renderAnnouncements();
+      renderAnnouncementHistory();
+      
+      // 清空输入框
+      input.value = '';
+      updateCharCount();
+      
+      showMessage('公告发布成功', 'success');
+    }
+
+    // 删除单条公告
+    function deleteAnnouncement(index) {
+      if (confirm('确定要删除这条公告吗？')) {
+        announcements.splice(index, 1);
+        saveAnnouncements();
+        renderAnnouncements();
+        renderAnnouncementHistory();
+        showMessage('公告已删除', 'success');
+      }
+    }
+
+    // 清除所有公告
+    function clearAllAnnouncements() {
+      if (announcements.length === 0) {
+        showMessage('暂无历史公告', 'info');
+        return;
+      }
+      
+      if (confirm(`确定要清除所有${announcements.length}条历史公告吗？此操作不可撤销！`)) {
+        announcements = [];
+        saveAnnouncements();
+        renderAnnouncements();
+        renderAnnouncementHistory();
+        showMessage('已清除所有历史公告', 'success');
+      }
+    }
+
+    // 更新字符计数
+    function updateCharCount() {
+      const input = document.getElementById('announcementInput');
+      const count = document.getElementById('announcementCharCount');
+      count.textContent = `${input.value.length}/500`;
+    }
+
+    // 初始数据
+    const defaultTeamData = [
+      { id: 1, name: "销售一部", slogan: "勇攀高峰，业绩为王", channel: "直播部", rate: 128.3, rankChange: 0, avatar: "" },
+      { id: 2, name: "销售二部", slogan: "团结协作，共创辉煌", channel: "视频部", rate: 115.6, rankChange: 2, avatar: "" },
+      { id: 3, name: "销售三部", slogan: "精益求精，追求卓越", channel: "品牌部", rate: 102.4, rankChange: -1, avatar: "" },
+      { id: 4, name: "区域团队A", slogan: "专注服务，用心经营", channel: "设计部", rate: 89.5, rankChange: 1, avatar: "" },
+      { id: 5, name: "区域团队B", slogan: "开拓创新，永不止步", channel: "平台运营", rate: 78.2, rankChange: -2, avatar: "" },
+      { id: 6, name: "电商团队", slogan: "诚信为本，质量第一", channel: "客服部", rate: 67.8, rankChange: 0, avatar: "" },
+      { id: 7, name: "新媒体团队", slogan: "内容为王，流量至上", channel: "直播部", rate: 56.4, rankChange: 3, avatar: "" },
+      { id: 8, name: "合作团队", slogan: "合作共赢，共同发展", channel: "视频部", rate: 45.2, rankChange: -1, avatar: "" }
+    ];
+
+    // 获取团队首字母缩写（用于默认头像）
+    function getTeamInitials(name) {
+      if (!name) return '?';
+      // 如果是中文，取前两个字
+      if (/[\u4e00-\u9fa5]/.test(name)) {
+        return name.substring(0, 2);
+      }
+      // 如果是英文，取首字母
+      const words = name.trim().split(/\s+/);
+      if (words.length >= 2) {
+        return (words[0][0] + words[1][0]).toUpperCase();
+      }
+      return name.substring(0, 2).toUpperCase();
+    }
+
+    // 生成头像HTML
+    function getAvatarHTML(team, size = 'md') {
+      const sizes = {
+        sm: 'w-8 h-8 text-xs',
+        md: 'w-10 h-10 text-sm',
+        lg: 'w-12 h-12 text-base',
+        xl: 'w-16 h-16 text-lg'
+      };
+      
+      const sizeClass = sizes[size] || sizes.md;
+      
+      if (team.avatar && team.avatar.trim() !== '') {
+        return `
+          <div class="${sizeClass} rounded-full overflow-hidden flex-shrink-0 border-2 border-white shadow-sm">
+            <img src="${team.avatar}" alt="${team.name}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+            <div class="w-full h-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center font-semibold text-white" style="display:none;">
+              ${getTeamInitials(team.name)}
+            </div>
+          </div>
+        `;
+      } else {
+        // 默认头像 - 使用渐变背景和首字母
+        const gradients = [
+          'from-red-400 to-pink-500',
+          'from-blue-400 to-indigo-500',
+          'from-green-400 to-teal-500',
+          'from-yellow-400 to-orange-500',
+          'from-purple-400 to-pink-500',
+          'from-cyan-400 to-blue-500'
+        ];
+        const gradient = gradients[team.id % gradients.length];
+        
+        return `
+          <div class="${sizeClass} rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center font-semibold text-white flex-shrink-0 border-2 border-white shadow-sm">
+            ${getTeamInitials(team.name)}
+          </div>
+        `;
+      }
+    }
+
+    // 工具函数：防抖
+    function debounce(func, wait) {
+      let timeout;
+      return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+      };
+    }
+
+    // 工具函数：显示消息 - 优化移动端显示
+    function showMessage(message, type = 'success') {
+      const container = document.getElementById('messageContainer');
+      const messageDiv = document.createElement('div');
+      
+      const bgColor = type === 'success' ? 'bg-success' : type === 'error' ? 'bg-primary' : 'bg-secondary';
+      messageDiv.className = `${bgColor} text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-slideUp text-sm`;
+      
+      const icon = type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle';
+      messageDiv.innerHTML = `
+        <i class="fa fa-${icon} flex-shrink-0"></i>
+        <span class="flex-1">${message}</span>
+        <button onclick="this.parentElement.remove()" class="ml-2 hover:opacity-80">
+          <i class="fa fa-times"></i>
+        </button>
+      `;
+      
+      container.appendChild(messageDiv);
+      
+      setTimeout(() => {
+        messageDiv.style.opacity = '0';
+        messageDiv.style.transform = 'translateX(100%)';
+        setTimeout(() => messageDiv.remove(), 300);
+      }, 3000);
+    }
+
+    // 加载团队数据
+    function loadTeamData() {
+      const savedData = localStorage.getItem('teamData');
+      if (savedData) {
+        teamData = JSON.parse(savedData);
+      } else {
+        teamData = [...defaultTeamData];
+        saveTeamData();
+      }
+    }
+
+    // 保存团队数据
+    function saveTeamData() {
+      localStorage.setItem('teamData', JSON.stringify(teamData));
+    }
+
+    // 渲染前三名 - 优化布局，突出第一名，修复奖杯裁剪，底部对齐，添加口号显示
+    function renderTopThree() {
+      const sortedTeams = [...teamData].sort((a, b) => b.rate - a.rate);
+      const top3 = sortedTeams.slice(0, 3);
+      const container = document.getElementById('topThreeContainer');
+      
+      // 第二名 - 中等高度，底部对齐
+      const secondPlace = top3[1] ? `
+        <div class="relative order-1 sm:order-1 animate-fadeIn transform sm:scale-90" style="animation-delay: 0.1s">
+          <div class="bg-gradient-to-br from-neutral-100 to-neutral-200 rounded-xl p-4 sm:p-5 text-center card-hover border-2 border-neutral-300 relative" style="margin-top: 18px;">
+            <div class="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-gradient-to-br from-neutral-300 to-neutral-400 text-white w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-sm sm:text-base shadow-lg z-20">
+              2
+            </div>
+            <div class="mt-5 sm:mt-6">
+              <div class="flex justify-center mb-3">
+                ${getAvatarHTML(top3[1], 'md')}
+              </div>
+              <h3 class="font-semibold text-sm sm:text-base text-neutral-700 truncate">${top3[1].name}</h3>
+              ${top3[1].slogan ? `<p class="text-xs text-neutral-600 italic truncate mt-1 px-2"><i class="fa fa-quote-left mr-1"></i>${top3[1].slogan}</p>` : ''}
+              <div class="mt-3">
+                <span class="text-xl sm:text-2xl font-bold text-neutral-700">${top3[1].rate}</span>
+                <span class="text-neutral-500 text-xs">%</span>
+              </div>
+              <div class="mt-3 w-full h-1.5 bg-neutral-300 rounded-full overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-neutral-400 to-neutral-500 rounded-full transition-all duration-1000" style="width: ${Math.min(top3[1].rate, 100)}%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ` : '';
+      
+      // 第一名 - 适度放大，突出显示，修复奖杯裁剪
+      const firstPlace = top3[0] ? `
+        <div class="relative order-2 sm:order-2 transform sm:scale-105 animate-fadeIn" style="animation-delay: 0s; z-index: 30;">
+          <div class="bg-gradient-to-br from-secondary to-secondary/90 rounded-xl p-5 sm:p-6 text-center card-hover shadow-2xl border-4 border-secondary medal-shine relative overflow-visible">
+            <div class="absolute -top-7 left-1/2 transform -translate-x-1/2 bg-gradient-to-br from-secondary to-amber-600 text-white w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center font-bold text-xl sm:text-2xl shadow-2xl" style="z-index: 40;">
+              <i class="fa fa-trophy"></i>
+            </div>
+            <div class="mt-8 sm:mt-10">
+              <div class="flex justify-center mb-3">
+                ${getAvatarHTML(top3[0], 'lg')}
+              </div>
+              <h3 class="font-bold text-lg sm:text-xl text-white truncate">${top3[0].name}</h3>
+              ${top3[0].slogan ? `<p class="text-xs sm:text-sm text-white/80 italic truncate mt-1 px-2"><i class="fa fa-quote-left mr-1"></i>${top3[0].slogan}</p>` : ''}
+              <div class="mt-3 sm:mt-4">
+                <span class="text-3xl sm:text-4xl font-bold text-white">${top3[0].rate}</span>
+                <span class="text-white/90 text-base">%</span>
+              </div>
+              <div class="mt-3 w-full h-2.5 bg-white/30 rounded-full overflow-hidden">
+                <div class="h-full bg-white rounded-full transition-all duration-1000 shadow-lg" style="width: ${Math.min(top3[0].rate, 100)}%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ` : '';
+      
+      // 第三名 - 较低高度，底部对齐
+      const thirdPlace = top3[2] ? `
+        <div class="relative order-3 sm:order-3 animate-fadeIn transform sm:scale-90" style="animation-delay: 0.2s">
+          <div class="bg-gradient-to-br from-amber-600 to-amber-700 rounded-xl p-4 sm:p-5 text-center card-hover border-2 border-amber-700 relative" style="margin-top: 26px;">
+            <div class="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-gradient-to-br from-amber-700 to-amber-800 text-white w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-sm sm:text-base shadow-lg z-20">
+              3
+            </div>
+            <div class="mt-5 sm:mt-6">
+              <div class="flex justify-center mb-3">
+                ${getAvatarHTML(top3[2], 'md')}
+              </div>
+              <h3 class="font-semibold text-sm sm:text-base text-white truncate">${top3[2].name}</h3>
+              ${top3[2].slogan ? `<p class="text-xs text-white/80 italic truncate mt-1 px-2"><i class="fa fa-quote-left mr-1"></i>${top3[2].slogan}</p>` : ''}
+              <div class="mt-3">
+                <span class="text-xl sm:text-2xl font-bold text-white">${top3[2].rate}</span>
+                <span class="text-white/90 text-xs">%</span>
+              </div>
+              <div class="mt-3 w-full h-1.5 bg-white/30 rounded-full overflow-hidden">
+                <div class="h-full bg-white rounded-full transition-all duration-1000" style="width: ${Math.min(top3[2].rate, 100)}%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ` : '';
+      
+      container.innerHTML = secondPlace + firstPlace + thirdPlace;
+    }
+
+    // 渲染排行榜列表 - 优化排版和交互，添加头像，优化间距布局
+    function renderRankingList() {
+      const sortedTeams = [...teamData].sort((a, b) => b.rate - a.rate);
+      const container = document.getElementById('rankingList');
+      
+      let html = '';
+      sortedTeams.slice(3).forEach((team, index) => {
+        const rank = index + 4;
+        const changeIcon = team.rankChange > 0 ? 'arrow-up' : team.rankChange < 0 ? 'arrow-down' : 'minus';
+        const changeColor = team.rankChange > 0 ? 'text-success' : team.rankChange < 0 ? 'text-primary' : 'text-neutral-400';
+        const rateColor = team.rate >= 100 ? 'text-success' : team.rate >= 80 ? 'text-secondary' : 'text-neutral-700';
+        const slogan = team.slogan || '';
+        
+        html += `
+          <div class="rank-item flex items-center justify-between p-4 sm:p-5 bg-neutral-50 hover:bg-neutral-100 rounded-lg border border-transparent hover:border-primary/20 transition-all" style="animation: fadeIn 0.3s ease-in ${index * 0.05}s both">
+            <div class="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+              <span class="text-xl sm:text-2xl font-bold text-neutral-400 w-7 sm:w-9 flex-shrink-0 text-center">${rank}</span>
+              <div class="flex-shrink-0">
+                ${getAvatarHTML(team, 'sm')}
+              </div>
+              <div class="flex-1 min-w-0">
+                <h4 class="font-semibold text-sm sm:text-base text-neutral-800 truncate">${team.name}</h4>
+                ${slogan ? `<p class="text-xs sm:text-sm text-neutral-600 italic truncate mt-0.5"><i class="fa fa-quote-left mr-1 text-xxs"></i>${slogan}</p>` : ''}
+                <p class="text-xs sm:text-sm text-neutral-500 truncate ${slogan ? '' : 'mt-0.5'}">
+                  <i class="fa fa-map-marker mr-1"></i>${team.channel}
+                </p>
+              </div>
+            </div>
+            <div class="flex items-center gap-4 sm:gap-6 flex-shrink-0 ml-3">
+              <div class="text-right">
+                <span class="text-lg sm:text-xl font-bold ${rateColor} whitespace-nowrap">${team.rate}%</span>
+                <div class="w-20 sm:w-24 h-1.5 sm:h-2 bg-neutral-200 rounded-full mt-1.5">
+                  <div class="h-full bg-gradient-to-r from-primary to-primary/80 rounded-full transition-all duration-1000" style="width: ${Math.min(team.rate, 100)}%"></div>
+                </div>
+              </div>
+              <div class="${changeColor} flex items-center gap-1 w-10 sm:w-12 justify-center flex-shrink-0">
+                <i class="fa fa-${changeIcon} text-xs sm:text-sm"></i>
+                <span class="text-xs sm:text-sm font-medium">${Math.abs(team.rankChange)}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      
+      container.innerHTML = html || '<div class="text-center text-neutral-400 py-8">暂无更多排名数据</div>';
+      
+      // 更新前三名显示
+      renderTopThree();
+      
+      // 更新团队数量
+      document.getElementById('teamCount').textContent = teamData.length;
+      
+      // 更新最佳团队
+      renderBestTeams();
+    }
+
+    // 渲染最佳团队 - 优化显示
+    function renderBestTeams() {
+      const sortedTeams = [...teamData].sort((a, b) => b.rate - a.rate);
+      const container = document.getElementById('bestTeamsContainer');
+      const emptyState = document.getElementById('emptyBestTeams');
+      const titleElement = document.getElementById('bestTeamTitle');
+      
+      // 更新板块标题
+      const savedData = localStorage.getItem('awards');
+      if (savedData) {
+        const data = JSON.parse(savedData);
+        titleElement.textContent = data.blockTitle || DEFAULT_AWARD_TITLE;
+      } else {
+        titleElement.textContent = DEFAULT_AWARD_TITLE;
+      }
+      
+      if (awards.length === 0) {
+        container.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+        return;
+      }
+      
+      container.classList.remove('hidden');
+      emptyState.classList.add('hidden');
+      
+      let html = '';
+      const icons = getAwardIcons();
+      
+      awards.forEach((award, index) => {
+        let team;
+        
+        // 如果指定了团队ID，使用指定的团队
+        if (award.teamId) {
+          team = teamData.find(t => t.id === award.teamId);
+        }
+        
+        // 否则按排名自动分配
+        if (!team && sortedTeams[index]) {
+          team = sortedTeams[index];
+        }
+        
+        if (!team) return;
+        
+        const iconObj = icons.find(i => i.value === award.icon) || icons[0];
+        
+        html += `
+          <div class="flex items-center justify-between p-3 bg-neutral-50 rounded-lg hover:bg-neutral-100 transition-colors">
+            <div class="flex items-center gap-3 flex-1 min-w-0">
+              <div class="${award.bg} p-2 rounded-full ${award.color} flex-shrink-0">
+                <i class="fa ${iconObj.icon} text-base sm:text-lg"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <p class="font-medium text-sm sm:text-base text-neutral-800 truncate">${team.name}</p>
+                  <span class="text-xs px-2 py-0.5 rounded-full ${award.bg} ${award.color} whitespace-nowrap">
+                    ${award.name}
+                  </span>
+                </div>
+                <p class="text-xs sm:text-sm text-neutral-500 truncate">${team.channel}</p>
+              </div>
+            </div>
+            <span class="font-bold text-sm sm:text-base text-neutral-800 ml-2">${team.rate}%</span>
+          </div>
+        `;
+      });
+      
+      container.innerHTML = html;
+    }
+
+    // 渲染可编辑表格 - 优化移动端，添加头像上传和口号编辑
+    function renderEditableTable() {
+      const sortedTeams = [...teamData].sort((a, b) => b.rate - a.rate);
+      const tbody = document.getElementById('editableTeamTable');
+      
+      let html = '';
+      sortedTeams.forEach((team, index) => {
+        html += `
+          <tr data-id="${team.id}" class="hover:bg-neutral-50 transition-colors">
+            <td class="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium">${index + 1}</td>
+            <td class="px-3 sm:px-4 py-2 sm:py-3">
+              <div class="flex flex-col gap-2">
+                <div class="flex items-center gap-2">
+                  ${getAvatarHTML(team, 'sm')}
+                  <div class="flex flex-col gap-1">
+                    <input 
+                      type="file" 
+                      accept="image/jpeg,image/png,image/gif,image/webp" 
+                      class="team-avatar-upload hidden" 
+                      data-team-id="${team.id}"
+                      id="avatarUpload_${team.id}"
+                    >
+                    <label 
+                      for="avatarUpload_${team.id}" 
+                      class="cursor-pointer text-xs text-primary hover:text-primary/80 flex items-center gap-1"
+                      title="上传图片"
+                    >
+                      <i class="fa fa-upload"></i>
+                      <span>上传</span>
+                    </label>
+                    ${team.avatar ? `
+                      <button 
+                        class="delete-avatar-btn text-xs text-neutral-500 hover:text-primary flex items-center gap-1" 
+                        data-team-id="${team.id}"
+                        title="删除头像"
+                      >
+                        <i class="fa fa-times"></i>
+                        <span>删除</span>
+                      </button>
+                    ` : ''}
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td class="px-3 sm:px-4 py-2 sm:py-3">
+              <input type="text" value="${team.name}" class="team-name-input input-field text-xs sm:text-sm py-1 min-w-0" data-field="name" placeholder="团队名称">
+            </td>
+            <td class="px-3 sm:px-4 py-2 sm:py-3">
+              <input type="text" value="${team.slogan || ''}" class="team-slogan-input input-field text-xs sm:text-sm py-1 min-w-0" data-field="slogan" placeholder="输入团队口号">
+            </td>
+            <td class="px-3 sm:px-4 py-2 sm:py-3">
+              <div class="flex flex-col gap-1">
+                <select class="team-channel-select input-field text-xs sm:text-sm py-1 min-w-0" data-field="channel" data-team-id="${team.id}">
+                  <option value="直播部" ${team.channel === '直播部' ? 'selected' : ''}>直播部</option>
+                  <option value="视频部" ${team.channel === '视频部' ? 'selected' : ''}>视频部</option>
+                  <option value="品牌部" ${team.channel === '品牌部' ? 'selected' : ''}>品牌部</option>
+                  <option value="设计部" ${team.channel === '设计部' ? 'selected' : ''}>设计部</option>
+                  <option value="平台运营" ${team.channel === '平台运营' ? 'selected' : ''}>平台运营</option>
+                  <option value="客服部" ${team.channel === '客服部' ? 'selected' : ''}>客服部</option>
+                  <option value="商务部" ${team.channel === '商务部' ? 'selected' : ''}>商务部</option>
+                  <option value="__custom__" ${!['\u76f4\u64ad\u90e8','\u89c6\u9891\u90e8','\u54c1\u724c\u90e8','\u8bbe\u8ba1\u90e8','\u5e73\u53f0\u8fd0\u8425','\u5ba2\u670d\u90e8','\u5546\u52a1\u90e8'].includes(team.channel) ? 'selected' : ''}>自定义...</option>
+                </select>
+                <input 
+                  type="text" 
+                  class="team-custom-channel-input input-field text-xs sm:text-sm py-1 min-w-0 ${['\u76f4\u64ad\u90e8','\u89c6\u9891\u90e8','\u54c1\u724c\u90e8','\u8bbe\u8ba1\u90e8','\u5e73\u53f0\u8fd0\u8425','\u5ba2\u670d\u90e8','\u5546\u52a1\u90e8'].includes(team.channel) ? 'hidden' : ''}" 
+                  value="${!['\u76f4\u64ad\u90e8','\u89c6\u9891\u90e8','\u54c1\u724c\u90e8','\u8bbe\u8ba1\u90e8','\u5e73\u53f0\u8fd0\u8425','\u5ba2\u670d\u90e8','\u5546\u52a1\u90e8'].includes(team.channel) ? team.channel : ''}" 
+                  placeholder="请输入自定义渠道名称"
+                  data-team-id="${team.id}"
+                >
+              </div>
+            </td>
+            <td class="px-3 sm:px-4 py-2 sm:py-3">
+              <input type="number" step="0.1" value="${team.rate}" class="team-rate-input input-field text-xs sm:text-sm py-1 w-20 sm:w-24" data-field="rate">
+            </td>
+            <td class="px-3 sm:px-4 py-2 sm:py-3">
+              <input type="number" value="${team.rankChange}" class="team-rankchange-input input-field text-xs sm:text-sm py-1 w-16 sm:w-20" data-field="rankChange">
+            </td>
+            <td class="px-3 sm:px-4 py-2 sm:py-3 text-right">
+              <button class="delete-team-btn text-primary hover:text-primary/80 transition-colors p-1" data-id="${team.id}" title="删除">
+                <i class="fa fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+      
+      tbody.innerHTML = html;
+      
+      // 设置表格事件监听器
+      setupTableEventListeners();
+    }
+
+    // 设置表格事件监听器
+    function setupTableEventListeners() {
+      const tbody = document.getElementById('editableTeamTable');
+      
+      // 移除旧的监听器
+      tbody.replaceWith(tbody.cloneNode(true));
+      const newTbody = document.getElementById('editableTeamTable');
+      
+      // 添加输入事件监听器
+      newTbody.addEventListener('input', debounce(function(e) {
+        const input = e.target;
+        if (input.matches('.team-name-input, .team-rate-input, .team-rankchange-input, .team-slogan-input')) {
+          const row = input.closest('tr');
+          const teamId = parseInt(row.dataset.id);
+          const field = input.dataset.field;
+          let value = input.value;
+          
+          if (field === 'rate' || field === 'rankChange') {
+            value = parseFloat(value) || 0;
+          }
+          
+          updateTeamData(teamId, field, value);
+        }
+        
+        // 处理自定义渠道输入
+        if (input.matches('.team-custom-channel-input')) {
+          const teamId = parseInt(input.dataset.teamId);
+          const customChannel = input.value.trim();
+          if (customChannel) {
+            updateTeamData(teamId, 'channel', customChannel);
+          }
+        }
+      }, 500));
+      
+      // 添加渠道选择变化事件
+      newTbody.addEventListener('change', function(e) {
+        // 处理渠道下拉选择
+        if (e.target.matches('.team-channel-select')) {
+          const select = e.target;
+          const teamId = parseInt(select.dataset.teamId);
+          const row = select.closest('tr');
+          const customInput = row.querySelector('.team-custom-channel-input');
+          
+          if (select.value === '__custom__') {
+            // 显示自定义输入框
+            customInput.classList.remove('hidden');
+            customInput.focus();
+          } else {
+            // 隐藏自定义输入框，使用预设渠道
+            customInput.classList.add('hidden');
+            customInput.value = '';
+            updateTeamData(teamId, 'channel', select.value);
+          }
+        }
+        
+        // 处理头像上传
+        if (e.target.matches('.team-avatar-upload')) {
+          const input = e.target;
+          const teamId = parseInt(input.dataset.teamId);
+          const file = input.files[0];
+          
+          if (file) {
+            // 验证文件类型
+            const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            if (!validTypes.includes(file.type)) {
+              showMessage('请上传有效的图片文件（jpg、png、gif、webp）', 'error');
+              input.value = '';
+              return;
+            }
+            
+            // 验证文件大小（2MB）
+            if (file.size > 2 * 1024 * 1024) {
+              showMessage('图片大小不能超过2MB', 'error');
+              input.value = '';
+              return;
+            }
+            
+            // 读取文件并转换为Base64
+            const reader = new FileReader();
+            reader.onload = function(event) {
+              const base64Data = event.target.result;
+              updateTeamData(teamId, 'avatar', base64Data);
+              showMessage('头像上传成功', 'success');
+            };
+            reader.onerror = function() {
+              showMessage('图片读取失败，请重试', 'error');
+              input.value = '';
+            };
+            reader.readAsDataURL(file);
+          }
+        }
+      });
+      
+      // 添加删除按钮事件监听器
+      newTbody.addEventListener('click', function(e) {
+        // 删除团队
+        if (e.target.closest('.delete-team-btn')) {
+          const btn = e.target.closest('.delete-team-btn');
+          const teamId = parseInt(btn.dataset.id);
+          deleteTeam(teamId);
+        }
+        
+        // 删除头像
+        if (e.target.closest('.delete-avatar-btn')) {
+          const btn = e.target.closest('.delete-avatar-btn');
+          const teamId = parseInt(btn.dataset.teamId);
+          if (confirm('确定要删除该头像并恢复为默认头像吗？')) {
+            updateTeamData(teamId, 'avatar', '');
+            showMessage('已恢复为默认头像', 'success');
+          }
+        }
+      });
+    }
+
+    // 更新团队数据
+    function updateTeamData(teamId, field, value) {
+      const teamIndex = teamData.findIndex(team => team.id === teamId);
+      if (teamIndex !== -1) {
+        teamData[teamIndex][field] = value;
+        
+        if (field === 'rate') {
+          // 重新排序并更新排名变动
+          const oldRanks = {};
+          teamData.forEach((team, index) => {
+            oldRanks[team.id] = index + 1;
+          });
+          
+          teamData.sort((a, b) => b.rate - a.rate);
+          
+          teamData.forEach((team, index) => {
+            const newRank = index + 1;
+            const oldRank = oldRanks[team.id];
+            team.rankChange = oldRank - newRank;
+          });
+          
+          renderRankingList();
+          updateOverallRate();
+          updateCharts();
+        } else if (field === 'avatar' || field === 'name' || field === 'slogan') {
+          // 头像、名称或口号更改时，重新渲染排行榜和表格
+          renderRankingList();
+          renderEditableTable();
+        }
+        
+        saveTeamData();
+        showMessage('数据已更新', 'success');
+      }
+    }
+
+    // 删除团队
+    function deleteTeam(teamId) {
+      if (confirm('确定要删除这个团队吗？')) {
+        teamData = teamData.filter(team => team.id !== teamId);
+        
+        // 删除对应的趋势数据
+        delete trendData[teamId];
+        saveTrendData();
+        
+        saveTeamData();
+        renderRankingList();
+        renderEditableTable();
+        updateOverallRate();
+        updateCharts();
+        renderTrendDataTable(); // 更新趋势数据表
+        showMessage('团队已删除', 'success');
+      }
+    }
+
+    // 添加新团队
+    function addNewTeam(name, channel, rate) {
+      const newId = Math.max(...teamData.map(t => t.id), 0) + 1;
+      const newTeam = {
+        id: newId,
+        name: name,
+        slogan: '',
+        channel: channel,
+        rate: parseFloat(rate) || 0,
+        rankChange: 0,
+        avatar: ''
+      };
+      
+      teamData.push(newTeam);
+      
+      // 为新团队添加趋势数据
+      trendData[newId] = generateTrendDataForTeam(newTeam.rate);
+      saveTrendData();
+      
+      saveTeamData();
+      renderRankingList();
+      renderEditableTable();
+      updateOverallRate();
+      updateCharts();
+      renderTrendDataTable(); // 更新趋势数据表
+      showMessage('新团队已添加', 'success');
+    }
+
+    // 更新总体达成率 - 添加动画
+    function updateOverallRate() {
+      const totalRate = teamData.reduce((sum, team) => sum + team.rate, 0);
+      const avgRate = (totalRate / teamData.length).toFixed(1);
+      
+      const rateElement = document.getElementById('overallRate');
+      const currentRate = parseFloat(rateElement.textContent) || 0;
+      animateNumber(rateElement, currentRate, avgRate, 800);
+      
+      document.getElementById('overallProgressBar').style.width = `${Math.min(avgRate, 100)}%`;
+      document.getElementById('avgRate').textContent = avgRate;
+      
+      const maxRate = Math.max(...teamData.map(t => t.rate));
+      document.getElementById('maxRate').textContent = maxRate.toFixed(1);
+    }
+
+    // 数字动画
+    function animateNumber(element, start, end, duration) {
+      const startTime = performance.now();
+      const endValue = parseFloat(end);
+      const startValue = parseFloat(start);
+      
+      function update(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        const current = startValue + (endValue - startValue) * progress;
+        element.textContent = current.toFixed(1);
+        
+        if (progress < 1) {
+          requestAnimationFrame(update);
+        }
+      }
+      
+      requestAnimationFrame(update);
+    }
+
+    // 初始化图表 - 优化配置
+    function initCharts() {
+      // 通用配置
+      const commonOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            labels: {
+              font: { size: 11 },
+              padding: 10,
+              usePointStyle: true
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            padding: 12,
+            cornerRadius: 8,
+            titleFont: { size: 13 },
+            bodyFont: { size: 12 }
+          }
+        }
+      };
+
+      // 趋势图
+      const trendCtx = document.getElementById('trendChart').getContext('2d');
+      
+      // 动态获取前三名团队的趋势数据
+      const top3 = [...teamData].sort((a, b) => b.rate - a.rate).slice(0, 3);
+      const initialDatasets = top3.map((team, index) => {
+        const data = trendData[team.id] || generateTrendDataForTeam(team.rate);
+        return {
+          label: team.name,
+          data: data,
+          borderColor: ['#FF4D4F', '#FAAD14', '#52C41A'][index],
+          backgroundColor: [
+            'rgba(255, 77, 79, 0.1)',
+            'rgba(250, 173, 20, 0.1)',
+            'rgba(82, 196, 26, 0.1)'
+          ][index],
+          tension: 0.4,
+          borderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6
+        };
+      });
+      
+      charts.trend = new Chart(trendCtx, {
+        type: 'line',
+        data: {
+          labels: trendDates,
+          datasets: initialDatasets
+        },
+        options: {
+          ...commonOptions,
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { color: 'rgba(0, 0, 0, 0.05)' },
+              ticks: {
+                callback: function(value) {
+                  return value + '%';
+                },
+                font: { size: 11 }
+              }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { font: { size: 11 } }
+            }
+          },
+          plugins: {
+            ...commonOptions.plugins,
+            legend: { position: 'bottom' }
+          }
+        }
+      });
+
+      // 渠道分布图已移除，替换为实时公告板块
+
+      // 达成率分布图
+      const achievementCtx = document.getElementById('achievementChart').getContext('2d');
+      charts.achievement = new Chart(achievementCtx, {
+        type: 'bar',
+        data: {
+          labels: ['0-50%', '50-80%', '80-100%', '100%+'],
+          datasets: [{
+            label: '团队数量',
+            data: [2, 3, 2, 3],
+            backgroundColor: [
+              'rgba(255, 77, 79, 0.8)',
+              'rgba(250, 173, 20, 0.8)',
+              'rgba(82, 196, 26, 0.8)',
+              'rgba(24, 144, 255, 0.8)'
+            ],
+            borderRadius: 8,
+            borderWidth: 0,
+            barPercentage: 0.7
+          }]
+        },
+        options: {
+          ...commonOptions,
+          plugins: {
+            ...commonOptions.plugins,
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { color: 'rgba(0, 0, 0, 0.05)' },
+              ticks: {
+                stepSize: 1,
+                font: { size: 11 }
+              }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { font: { size: 11 } }
+            }
+          }
+        }
+      });
+    }
+
+    // 更新图表数据
+    function updateCharts() {
+      // 渠道分布图已移除
+      
+      // 更新达成率分布
+      const rateRanges = [0, 0, 0, 0];
+      teamData.forEach(team => {
+        if (team.rate < 50) rateRanges[0]++;
+        else if (team.rate < 80) rateRanges[1]++;
+        else if (team.rate < 100) rateRanges[2]++;
+        else rateRanges[3]++;
+      });
+      
+      if (charts.achievement) {
+        charts.achievement.data.datasets[0].data = rateRanges;
+        charts.achievement.update('active');
+      }
+    }
+
+    // 获取活动结束时间
+    function getActivityEndTime() {
+      const savedSettings = localStorage.getItem('systemSettings');
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        if (settings.activityEndTime) {
+          return settings.activityEndTime;
+        }
+      }
+      return DEFAULT_END_TIME;
+    }
+
+    // 倒计时功能
+    function startCountdown() {
+      // 清除旧的定时器
+      if (countdownTimer) {
+        clearInterval(countdownTimer);
+      }
+      
+      const updateCountdown = () => {
+        const endTimeStr = getActivityEndTime();
+        const targetDate = new Date(endTimeStr).getTime();
+        const now = new Date().getTime();
+        const distance = targetDate - now;
+        
+        if (distance < 0) {
+          document.getElementById('countdown').innerHTML = '<div class="text-base sm:text-xl font-bold">活动已结束</div>';
+          if (countdownTimer) {
+            clearInterval(countdownTimer);
+          }
+          return;
+        }
+        
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+        
+        document.getElementById('days').textContent = String(days).padStart(2, '0');
+        document.getElementById('hours').textContent = String(hours).padStart(2, '0');
+        document.getElementById('minutes').textContent = String(minutes).padStart(2, '0');
+        document.getElementById('seconds').textContent = String(seconds).padStart(2, '0');
+      };
+      
+      updateCountdown();
+      countdownTimer = setInterval(updateCountdown, 1000);
+    }
+
+    // 刷新数据
+    function refreshData() {
+      const refreshBtn = document.getElementById('refreshBtn');
+      refreshBtn.classList.add('animate-spin');
+      refreshBtn.disabled = true;
+      
+      // 模拟数据刷新
+      setTimeout(() => {
+        loadTeamData();
+        renderRankingList();
+        renderEditableTable();
+        updateOverallRate();
+        updateCharts();
+        
+        // 更新最后更新时间
+        const now = new Date();
+        const timeString = now.toLocaleString('zh-CN', { 
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        });
+        document.getElementById('lastUpdateTime').textContent = timeString;
+        
+        refreshBtn.classList.remove('animate-spin');
+        refreshBtn.disabled = false;
+        showMessage('数据已刷新', 'success');
+      }, 1000);
+    }
+
+    // 导出所有数据
+    function exportAllData() {
+      const exportData = {
+        version: '1.0',
+        exportTime: new Date().toISOString(),
+        teamData: teamData,
+        trendData: {
+          dates: trendDates,
+          teamData: trendData
+        },
+        announcements: announcements,
+        awards: awards,
+        systemSettings: JSON.parse(localStorage.getItem('systemSettings') || '{}')
+      };
+      
+      // 创建下载链接
+      const dataStr = JSON.stringify(exportData, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+      link.download = `排行榜数据_${timestamp}.json`;
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      showMessage('数据导出成功！文件已下载', 'success');
+    }
+
+    // 导入数据
+    function importAllData(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      // 验证文件类型
+      if (!file.name.endsWith('.json')) {
+        showMessage('请选择有效的JSON文件', 'error');
+        event.target.value = '';
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const importData = JSON.parse(e.target.result);
+          
+          // 验证数据格式
+          if (!importData.version || !importData.teamData) {
+            showMessage('文件格式不正确，请选择有效的导出文件', 'error');
+            return;
+          }
+          
+          // 确认导入
+          if (!confirm('导入数据将覆盖当前所有本地数据，是否继续？\n\n建议先导出当前数据进行备份！')) {
+            event.target.value = '';
+            return;
+          }
+          
+          // 导入团队数据
+          if (importData.teamData) {
+            teamData = importData.teamData;
+            localStorage.setItem('teamData', JSON.stringify(teamData));
+          }
+          
+          // 导入趋势数据
+          if (importData.trendData) {
+            trendDates = importData.trendData.dates || getDefaultTrendDates();
+            trendData = importData.trendData.teamData || {};
+            saveTrendData();
+          }
+          
+          // 导入公告数据
+          if (importData.announcements) {
+            announcements = importData.announcements;
+            saveAnnouncements();
+          }
+          
+          // 导入奖项数据
+          if (importData.awards) {
+            awards = importData.awards;
+            // 保存奖项数据（需要包含blockTitle）
+            const savedData = localStorage.getItem('awards');
+            let blockTitle = DEFAULT_AWARD_TITLE;
+            if (savedData) {
+              try {
+                blockTitle = JSON.parse(savedData).blockTitle || DEFAULT_AWARD_TITLE;
+              } catch(e) {}
+            }
+            const awardsData = {
+              blockTitle: blockTitle,
+              awards: awards
+            };
+            localStorage.setItem('awards', JSON.stringify(awardsData));
+          }
+          
+          // 导入系统设置
+          if (importData.systemSettings) {
+            localStorage.setItem('systemSettings', JSON.stringify(importData.systemSettings));
+          }
+          
+          // 重新加载所有数据
+          loadTeamData();
+          loadTrendData();
+          loadAnnouncements();
+          loadAwards();
+          loadSystemSettings();
+          
+          // 重新渲染界面
+          renderRankingList();
+          renderEditableTable();
+          renderTrendDates();
+          renderTrendDataTable();
+          renderAnnouncements();
+          renderAnnouncementHistory();
+          renderAwardsList();
+          renderBestTeams();
+          updateOverallRate();
+          updateCharts();
+          updateTrendChart('top3');
+          startCountdown();
+          
+          showMessage('数据导入成功！页面已更新', 'success');
+          
+          // 清空文件输入
+          event.target.value = '';
+          
+        } catch (error) {
+          console.error('导入错误:', error);
+          showMessage('数据导入失败，文件格式错误', 'error');
+          event.target.value = '';
+        }
+      };
+      
+      reader.onerror = function() {
+        showMessage('文件读取失败', 'error');
+        event.target.value = '';
+      };
+      
+      reader.readAsText(file);
+    }
+
+    // 清空所有数据
+    function clearAllData() {
+      if (!confirm('确定要清空所有本地数据吗？\n\n此操作将删除：\n- 所有团队数据\n- 趋势数据\n- 公告信息\n- 奖项设置\n- 系统设置\n\n此操作不可恢复！')) {
+        return;
+      }
+      
+      if (!confirm('再次确认：真的要清空所有数据吗？')) {
+        return;
+      }
+      
+      // 清空 localStorage
+      localStorage.clear();
+      
+      // 重置为默认数据
+      teamData = [...defaultTeamData];
+      announcements = [];
+      awards = [];
+      trendDates = getDefaultTrendDates();
+      initializeTrendData();
+      
+      // 保存默认数据
+      saveTeamData();
+      saveTrendData();
+      saveAnnouncements();
+      saveAwards();
+      
+      // 重新加载和渲染
+      loadSystemSettings();
+      renderRankingList();
+      renderEditableTable();
+      renderTrendDates();
+      renderTrendDataTable();
+      renderAnnouncements();
+      renderAnnouncementHistory();
+      renderAwardsList();
+      renderBestTeams();
+      updateOverallRate();
+      updateCharts();
+      updateTrendChart('top3');
+      startCountdown();
+      
+      showMessage('所有数据已清空，恢复到初始状态', 'success');
+    }
+
+    // 设置事件监听器
+    function setupEventListeners() {
+      if (isEventListenersSetup) return;
+      isEventListenersSetup = true;
+      
+      // 管理面板切换
+      document.getElementById('adminToggle').addEventListener('click', () => {
+        const panel = document.getElementById('adminPanel');
+        panel.classList.toggle('hidden');
+        if (!panel.classList.contains('hidden')) {
+          renderEditableTable();
+          // 平滑滚动到管理面板
+          setTimeout(() => {
+            panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 100);
+        }
+      });
+      
+      document.getElementById('closeAdminPanel').addEventListener('click', () => {
+        document.getElementById('adminPanel').classList.add('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+      
+      // 刷新按钮
+      document.getElementById('refreshBtn').addEventListener('click', refreshData);
+      
+      // 快速添加团队
+      document.getElementById('quickAddTeamBtn').addEventListener('click', () => {
+        const name = document.getElementById('quickTeamName').value.trim();
+        const channel = document.getElementById('quickTeamChannel').value;
+        const rate = document.getElementById('quickTeamRate').value;
+        
+        if (!name) {
+          showMessage('请输入团队名称', 'error');
+          document.getElementById('quickTeamName').focus();
+          return;
+        }
+        
+        if (!rate || parseFloat(rate) < 0) {
+          showMessage('请输入有效的达成率', 'error');
+          document.getElementById('quickTeamRate').focus();
+          return;
+        }
+        
+        addNewTeam(name, channel, rate);
+        
+        // 清空输入框
+        document.getElementById('quickTeamName').value = '';
+        document.getElementById('quickTeamRate').value = '';
+        document.getElementById('quickTeamName').focus();
+      });
+      
+      // 支持Enter键提交
+      document.getElementById('quickTeamRate').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          document.getElementById('quickAddTeamBtn').click();
+        }
+      });
+      
+      // 添加新行按钮
+      document.getElementById('addRowBtn').addEventListener('click', () => {
+        addNewTeam(`新团队${teamData.length + 1}`, '直播部', 0);
+      });
+      
+      // 保存数据按钮
+      document.getElementById('saveDataBtn').addEventListener('click', () => {
+        saveTeamData();
+        renderRankingList();
+        updateCharts();
+        showMessage('所有更改已保存', 'success');
+      });
+      
+      // 重置结束时间按钮
+      document.getElementById('resetEndTimeBtn').addEventListener('click', () => {
+        document.getElementById('activityEndTime').value = formatDateTimeLocal(DEFAULT_END_TIME);
+        showMessage('已重置为默认时间', 'info');
+      });
+      
+      // 公告输入框字符计数
+      document.getElementById('announcementInput').addEventListener('input', updateCharCount);
+      
+      // 公告输入框支持Ctrl+Enter快捷发布
+      document.getElementById('announcementInput').addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+          e.preventDefault();
+          publishAnnouncement();
+        }
+      });
+      
+      // 发布公告按钮
+      document.getElementById('publishAnnouncementBtn').addEventListener('click', publishAnnouncement);
+      
+      // 清除历史公告按钮
+      document.getElementById('clearAnnouncementsBtn').addEventListener('click', clearAllAnnouncements);
+      
+      // 添加奖项按钮
+      document.getElementById('addAwardBtn').addEventListener('click', addNewAward);
+      
+      // 保存奖项设置按钮
+      document.getElementById('saveAwardsBtn').addEventListener('click', saveAwardsSettings);
+      
+      // 重置奖项按钮
+      document.getElementById('resetAwardsBtn').addEventListener('click', resetAwardsSettings);
+      
+      // 趋势数据编辑相关
+      document.getElementById('addTrendDateBtn').addEventListener('click', addTrendDate);
+      document.getElementById('resetTrendDatesBtn').addEventListener('click', resetTrendDates);
+      document.getElementById('saveTrendDataBtn').addEventListener('click', saveTrendDataAndUpdateChart);
+      document.getElementById('autoGenerateTrendBtn').addEventListener('click', autoGenerateTrendData);
+      
+      // 数据导入导出相关
+      document.getElementById('exportDataBtn').addEventListener('click', exportAllData);
+      document.getElementById('importDataBtn').addEventListener('click', () => {
+        document.getElementById('importDataInput').click();
+      });
+      document.getElementById('importDataInput').addEventListener('change', importAllData);
+      document.getElementById('clearAllDataBtn').addEventListener('click', clearAllData);
+      
+      // 保存设置按钮
+      document.getElementById('saveSettingsBtn').addEventListener('click', () => {
+        const refreshInterval = document.getElementById('refreshInterval').value;
+        const dataSource = document.getElementById('dataSource').value;
+        const rankingCount = document.getElementById('rankingCount').value;
+        const enableAnimation = document.getElementById('enableAnimation').checked;
+        const enableNotification = document.getElementById('enableNotification').checked;
+        const activityEndTime = document.getElementById('activityEndTime').value;
+        
+        // 验证结束时间
+        if (!activityEndTime) {
+          showMessage('请设置活动结束时间', 'error');
+          document.getElementById('activityEndTime').focus();
+          return;
+        }
+        
+        const endDate = new Date(activityEndTime);
+        const now = new Date();
+        if (endDate < now) {
+          if (!confirm('设置的结束时间早于当前时间，活动将显示为已结束。是否继续保存？')) {
+            return;
+          }
+        }
+        
+        const settings = {
+          refreshInterval,
+          dataSource,
+          rankingCount,
+          enableAnimation,
+          enableNotification,
+          activityEndTime
+        };
+        
+        localStorage.setItem('systemSettings', JSON.stringify(settings));
+        
+        // 应用设置
+        if (refreshInterval && refreshInterval >= 10) {
+          clearInterval(autoRefreshTimer);
+          autoRefreshTimer = setInterval(refreshData, refreshInterval * 1000);
+        }
+        
+        // 重启倒计时
+        startCountdown();
+        
+        showMessage('设置已保存，倒计时已更新', 'success');
+      });
+      
+      // 时间范围选择
+      document.getElementById('timeRange').addEventListener('change', (e) => {
+        const range = e.target.value;
+        const rangeText = e.target.options[e.target.selectedIndex].text;
+        showMessage(`已切换到${rangeText}`, 'info');
+        refreshData();
+      });
+      
+      // 主题切换
+      document.getElementById('themeToggle').addEventListener('click', () => {
+        document.body.classList.toggle('dark');
+        const isDark = document.body.classList.contains('dark');
+        const icon = document.querySelector('#themeToggle i');
+        icon.className = isDark ? 'fa fa-sun-o' : 'fa fa-moon-o';
+        showMessage(isDark ? '已切换到深色模式' : '已切换到浅色模式', 'info');
+      });
+      
+      // 排名筛选按钮
+      document.querySelectorAll('.ranking-filter').forEach(btn => {
+        btn.addEventListener('click', function() {
+          // 移除所有按钮的激活状态
+          document.querySelectorAll('.ranking-filter').forEach(b => {
+            b.className = 'ranking-filter btn-secondary text-xs sm:text-sm flex-1 sm:flex-none';
+          });
+          
+          // 激活当前按钮
+          this.className = 'ranking-filter btn-primary text-xs sm:text-sm flex-1 sm:flex-none';
+          
+          const filterType = this.textContent.trim();
+          showMessage(`已按${filterType}排序`, 'info');
+          
+          // 这里可以根据不同的筛选条件重新排序
+          // 例如：按环比增长排序
+          if (filterType === '环比增长') {
+            teamData.sort((a, b) => b.rankChange - a.rankChange);
+            renderRankingList();
+          } else if (filterType === '达成率') {
+            teamData.sort((a, b) => b.rate - a.rate);
+            renderRankingList();
+          }
+        });
+      });
+      
+      // 团队对比选择
+      document.getElementById('teamComparison').addEventListener('change', (e) => {
+        const comparison = e.target.value;
+        updateTrendChart(comparison);
+      });
+    }
+
+    // 更新趋势图
+    function updateTrendChart(comparison) {
+      if (!charts.trend) return;
+      
+      let datasets = [];
+      
+      if (comparison === 'top3') {
+        const top3 = [...teamData].sort((a, b) => b.rate - a.rate).slice(0, 3);
+        datasets = top3.map((team, index) => {
+          const data = trendData[team.id] || generateTrendDataForTeam(team.rate);
+          return {
+            label: team.name,
+            data: data,
+            borderColor: ['#FF4D4F', '#FAAD14', '#52C41A'][index],
+            backgroundColor: [
+              'rgba(255, 77, 79, 0.1)',
+              'rgba(250, 173, 20, 0.1)',
+              'rgba(82, 196, 26, 0.1)'
+            ][index],
+            tension: 0.4,
+            borderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6
+          };
+        });
+      } else if (comparison === 'all') {
+        // 计算所有团队的平均值
+        const avgData = [];
+        for (let i = 0; i < trendDates.length; i++) {
+          let sum = 0;
+          let count = 0;
+          teamData.forEach(team => {
+            if (trendData[team.id] && trendData[team.id][i] !== undefined) {
+              sum += trendData[team.id][i];
+              count++;
+            }
+          });
+          avgData.push(count > 0 ? Math.round(sum / count * 10) / 10 : 0);
+        }
+        
+        datasets = [{
+          label: '所有团队平均',
+          data: avgData,
+          borderColor: '#1890FF',
+          backgroundColor: 'rgba(24, 144, 255, 0.1)',
+          tension: 0.4,
+          borderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6
+        }];
+      }
+      
+      charts.trend.data.labels = trendDates;
+      charts.trend.data.datasets = datasets;
+      charts.trend.update('active');
+    }
+
+    // 自动保存
+    function enableAutoSave() {
+      setInterval(() => {
+        saveTeamData();
+      }, 30000); // 每30秒自动保存一次
+    }
+
+    // 格式化日期时间为 datetime-local 输入框格式
+    function formatDateTimeLocal(dateTimeStr) {
+      const date = new Date(dateTimeStr);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
+
+    // 加载系统设置
+    function loadSystemSettings() {
+      const savedSettings = localStorage.getItem('systemSettings');
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        
+        if (settings.refreshInterval) {
+          document.getElementById('refreshInterval').value = settings.refreshInterval;
+          autoRefreshTimer = setInterval(refreshData, settings.refreshInterval * 1000);
+        }
+        
+        if (settings.dataSource) {
+          document.getElementById('dataSource').value = settings.dataSource;
+        }
+        
+        if (settings.rankingCount) {
+          document.getElementById('rankingCount').value = settings.rankingCount;
+        }
+        
+        if (settings.enableAnimation !== undefined) {
+          document.getElementById('enableAnimation').checked = settings.enableAnimation;
+        }
+        
+        if (settings.enableNotification !== undefined) {
+          document.getElementById('enableNotification').checked = settings.enableNotification;
+        }
+        
+        // 加载活动结束时间
+        const endTime = settings.activityEndTime || DEFAULT_END_TIME;
+        document.getElementById('activityEndTime').value = formatDateTimeLocal(endTime);
+      } else {
+        // 首次加载，设置默认值
+        document.getElementById('activityEndTime').value = formatDateTimeLocal(DEFAULT_END_TIME);
+      }
+    }
+
+    // 键盘快捷键
+    function setupKeyboardShortcuts() {
+      document.addEventListener('keydown', (e) => {
+        // Ctrl/Cmd + S 保存
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+          e.preventDefault();
+          saveTeamData();
+          showMessage('数据已保存', 'success');
+        }
+        
+        // Ctrl/Cmd + R 刷新
+        if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+          e.preventDefault();
+          refreshData();
+        }
+        
+        // Esc 关闭管理面板
+        if (e.key === 'Escape') {
+          const panel = document.getElementById('adminPanel');
+          if (!panel.classList.contains('hidden')) {
+            panel.classList.add('hidden');
+          }
+        }
+      });
+    }
+
+    // 响应式处理
+    function handleResponsive() {
+      const isMobile = window.innerWidth < 768;
+      
+      if (isMobile) {
+        // 移动端优化：减少动画效果
+        document.querySelectorAll('.card-hover').forEach(card => {
+          card.style.transition = 'background-color 0.2s';
+        });
+      } else {
+        // 桌面端恢复动画
+        document.querySelectorAll('.card-hover').forEach(card => {
+          card.style.transition = '';
+        });
+      }
+    }
+
+    // 错误处理
+    window.addEventListener('error', function(event) {
+      console.error('全局错误:', event.error);
+      showMessage('系统出现错误，请刷新页面重试', 'error');
+    });
+
+    // 页面卸载前保存数据
+    window.addEventListener('beforeunload', function(e) {
+      saveTeamData();
+    });
+
+    // 监听窗口大小变化
+    let resizeTimer;
+    window.addEventListener('resize', function() {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        handleResponsive();
+        // 重绘图表以适应新尺寸
+        Object.values(charts).forEach(chart => {
+          if (chart) chart.resize();
+        });
+      }, 250);
+    });
+
+    // 页面可见性变化处理
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden) {
+        // 页面重新可见时刷新数据
+        refreshData();
+      }
+    });
+
+    // 添加触摸反馈（移动端）
+    function setupTouchFeedback() {
+      if ('ontouchstart' in window) {
+        document.querySelectorAll('.rank-item, .card-hover').forEach(element => {
+          element.addEventListener('touchstart', function() {
+            this.style.transform = 'scale(0.98)';
+          });
+          
+          element.addEventListener('touchend', function() {
+            this.style.transform = '';
+          });
+        });
+      }
+    }
+
+    // 初始化函数
+    async function init() {
+      try {
+        // 显示加载状态
+        console.log('系统初始化中...');
+        
+        // 加载数据
+        loadTeamData();
+        loadSystemSettings();
+        loadAnnouncements();
+        loadAwards();
+        loadTrendData();
+        
+        // 创建界面
+        renderRankingList();
+        renderEditableTable();
+        renderAnnouncements();
+        renderAnnouncementHistory();
+        renderAwardsList();
+        renderBestTeams();
+        renderTrendDates();
+        renderTrendDataTable();
+        
+        // 初始化功能
+        initCharts();
+        startCountdown();
+        setupEventListeners();
+        setupKeyboardShortcuts();
+        setupTouchFeedback();
+        
+        // 更新显示
+        updateOverallRate();
+        updateCharts();
+        handleResponsive();
+        
+        // 启用自动功能
+        enableAutoSave();
+        
+        // 更新最后更新时间
+        const now = new Date();
+        const timeString = now.toLocaleString('zh-CN', { 
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        });
+        document.getElementById('lastUpdateTime').textContent = timeString;
+        
+        // 显示加载成功
+        setTimeout(() => {
+          showMessage('系统加载完成', 'success');
+        }, 500);
+        
+        console.log('系统初始化完成');
+        
+      } catch (error) {
+        console.error('初始化失败:', error);
+        showMessage('系统初始化失败: ' + error.message, 'error');
+      }
+    }
+
+    // DOM 加载完成后初始化
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+
+    // 导出一些全局方法供调试使用
+    window.debugApp = {
+      teamData: () => teamData,
+      charts: () => charts,
+      refresh: refreshData,
+      addTeam: addNewTeam,
+      deleteTeam: deleteTeam,
+      saveData: saveTeamData,
+      loadData: loadTeamData
+    };
+  </script>
+</body>
+</html>
