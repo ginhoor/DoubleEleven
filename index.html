@@ -2663,8 +2663,22 @@
       if (isEventListenersSetup) return;
       isEventListenersSetup = true;
       
+      // 辅助函数：安全地添加事件监听器
+      const safeAddEventListener = (elementId, event, handler) => {
+        const element = document.getElementById(elementId);
+        if (element) {
+          element.addEventListener(event, handler);
+          return true;
+        } else {
+          console.warn(`⚠ 元素不存在: ${elementId}`);
+          return false;
+        }
+      };
+      
+      console.log('设置事件监听器...');
+      
       // 管理面板切换
-      document.getElementById('adminToggle').addEventListener('click', () => {
+      safeAddEventListener('adminToggle', 'click', () => {
         const panel = document.getElementById('adminPanel');
         panel.classList.toggle('hidden');
         if (!panel.classList.contains('hidden')) {
@@ -2676,16 +2690,16 @@
         }
       });
       
-      document.getElementById('closeAdminPanel').addEventListener('click', () => {
+      safeAddEventListener('closeAdminPanel', 'click', () => {
         document.getElementById('adminPanel').classList.add('hidden');
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
       
       // 刷新按钮
-      document.getElementById('refreshBtn').addEventListener('click', refreshData);
+      safeAddEventListener('refreshBtn', 'click', refreshData);
       
       // 快速添加团队
-      document.getElementById('quickAddTeamBtn').addEventListener('click', () => {
+      safeAddEventListener('quickAddTeamBtn', 'click', () => {
         const name = document.getElementById('quickTeamName').value.trim();
         const channel = document.getElementById('quickTeamChannel').value;
         const rate = document.getElementById('quickTeamRate').value;
@@ -2711,19 +2725,19 @@
       });
       
       // 支持Enter键提交
-      document.getElementById('quickTeamRate').addEventListener('keypress', (e) => {
+      safeAddEventListener('quickTeamRate', 'keypress', (e) => {
         if (e.key === 'Enter') {
           document.getElementById('quickAddTeamBtn').click();
         }
       });
       
       // 添加新行按钮
-      document.getElementById('addRowBtn').addEventListener('click', () => {
+      safeAddEventListener('addRowBtn', 'click', () => {
         addNewTeam(`新团队${teamData.length + 1}`, '直播部', 0);
       });
       
       // 保存数据按钮
-      document.getElementById('saveDataBtn').addEventListener('click', () => {
+      safeAddEventListener('saveDataBtn', 'click', () => {
         saveTeamData();
         renderRankingList();
         updateCharts();
@@ -2731,16 +2745,16 @@
       });
       
       // 重置结束时间按钮
-      document.getElementById('resetEndTimeBtn').addEventListener('click', () => {
+      safeAddEventListener('resetEndTimeBtn', 'click', () => {
         document.getElementById('activityEndTime').value = formatDateTimeLocal(DEFAULT_END_TIME);
         showMessage('已重置为默认时间', 'info');
       });
       
       // 公告输入框字符计数
-      document.getElementById('announcementInput').addEventListener('input', updateCharCount);
+      safeAddEventListener('announcementInput', 'input', updateCharCount);
       
       // 公告输入框支持Ctrl+Enter快捷发布
-      document.getElementById('announcementInput').addEventListener('keydown', (e) => {
+      safeAddEventListener('announcementInput', 'keydown', (e) => {
         if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
           e.preventDefault();
           publishAnnouncement();
@@ -2748,36 +2762,36 @@
       });
       
       // 发布公告按钮
-      document.getElementById('publishAnnouncementBtn').addEventListener('click', publishAnnouncement);
+      safeAddEventListener('publishAnnouncementBtn', 'click', publishAnnouncement);
       
       // 清除历史公告按钮
-      document.getElementById('clearAnnouncementsBtn').addEventListener('click', clearAllAnnouncements);
+      safeAddEventListener('clearAnnouncementsBtn', 'click', clearAllAnnouncements);
       
       // 添加奖项按钮
-      document.getElementById('addAwardBtn').addEventListener('click', addNewAward);
+      safeAddEventListener('addAwardBtn', 'click', addNewAward);
       
       // 保存奖项设置按钮
-      document.getElementById('saveAwardsBtn').addEventListener('click', saveAwardsSettings);
+      safeAddEventListener('saveAwardsBtn', 'click', saveAwardsSettings);
       
       // 重置奖项按钮
-      document.getElementById('resetAwardsBtn').addEventListener('click', resetAwardsSettings);
+      safeAddEventListener('resetAwardsBtn', 'click', resetAwardsSettings);
       
       // 趋势数据编辑相关
-      document.getElementById('addTrendDateBtn').addEventListener('click', addTrendDate);
-      document.getElementById('resetTrendDatesBtn').addEventListener('click', resetTrendDates);
-      document.getElementById('saveTrendDataBtn').addEventListener('click', saveTrendDataAndUpdateChart);
-      document.getElementById('autoGenerateTrendBtn').addEventListener('click', autoGenerateTrendData);
+      safeAddEventListener('addTrendDateBtn', 'click', addTrendDate);
+      safeAddEventListener('resetTrendDatesBtn', 'click', resetTrendDates);
+      safeAddEventListener('saveTrendDataBtn', 'click', saveTrendDataAndUpdateChart);
+      safeAddEventListener('autoGenerateTrendBtn', 'click', autoGenerateTrendData);
       
       // 数据导入导出相关
-      document.getElementById('exportDataBtn').addEventListener('click', exportAllData);
-      document.getElementById('importDataBtn').addEventListener('click', () => {
+      safeAddEventListener('exportDataBtn', 'click', exportAllData);
+      safeAddEventListener('importDataBtn', 'click', () => {
         document.getElementById('importDataInput').click();
       });
-      document.getElementById('importDataInput').addEventListener('change', importAllData);
-      document.getElementById('clearAllDataBtn').addEventListener('click', clearAllData);
+      safeAddEventListener('importDataInput', 'change', importAllData);
+      safeAddEventListener('clearAllDataBtn', 'click', clearAllData);
       
       // 保存设置按钮
-      document.getElementById('saveSettingsBtn').addEventListener('click', () => {
+      safeAddEventListener('saveSettingsBtn', 'click', () => {
         const refreshInterval = document.getElementById('refreshInterval').value;
         const dataSource = document.getElementById('dataSource').value;
         const rankingCount = document.getElementById('rankingCount').value;
@@ -2825,16 +2839,18 @@
         showMessage('设置已保存（自动刷新已禁用）', 'success');
       });
       
-      // 时间范围选择
-      document.getElementById('timeRange').addEventListener('change', (e) => {
+      // 时间范围选择（可选元素）
+      if (safeAddEventListener('timeRange', 'change', (e) => {
         const range = e.target.value;
         const rangeText = e.target.options[e.target.selectedIndex].text;
         showMessage(`已切换到${rangeText}`, 'info');
         refreshData();
-      });
+      })) {
+        console.log('  ✓ 时间范围选择器已绑定');
+      }
       
       // 主题切换
-      document.getElementById('themeToggle').addEventListener('click', () => {
+      safeAddEventListener('themeToggle', 'click', () => {
         document.body.classList.toggle('dark');
         const isDark = document.body.classList.contains('dark');
         const icon = document.querySelector('#themeToggle i');
@@ -2869,10 +2885,12 @@
       });
       
       // 团队对比选择
-      document.getElementById('teamComparison').addEventListener('change', (e) => {
+      safeAddEventListener('teamComparison', 'change', (e) => {
         const comparison = e.target.value;
         updateTrendChart(comparison);
       });
+      
+      console.log('✓ 事件监听器设置完成');
     }
 
     // 更新趋势图
