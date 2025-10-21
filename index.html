@@ -429,7 +429,7 @@
           </div>
           <div>
             <label class="block text-xs sm:text-sm font-medium text-neutral-700 mb-1">达成率 (%)</label>
-            <input type="number" step="0.1" id="quickTeamRate" placeholder="输入达成率" class="input-field text-sm">
+            <input type="number" step="0.01" id="quickTeamRate" placeholder="输入达成率" class="input-field text-sm">
           </div>
           <div class="flex items-end">
             <button id="quickAddTeamBtn" class="w-full btn-primary text-sm flex items-center justify-center gap-2">
@@ -880,7 +880,7 @@
       const data = [];
       let rate = currentRate * 0.5; // 从50%开始
       for (let i = 0; i < trendDates.length; i++) {
-        data.push(Math.round(rate * 10) / 10);
+        data.push(Math.round(rate * 100) / 100);
         rate += (currentRate - rate) / (trendDates.length - i);
       }
       return data;
@@ -979,12 +979,12 @@
             <td class="px-2 py-2">
               <input 
                 type="number" 
-                step="0.1" 
+                step="0.01" 
                 class="trend-data-input input-field text-sm py-1 w-20 text-center" 
-                value="${value}" 
+                value="${value.toFixed(2)}" 
                 data-team-id="${team.id}"
                 data-date-index="${dateIndex}"
-                placeholder="0.0"
+                placeholder="0.00"
               >
             </td>
           `;
@@ -1001,7 +1001,7 @@
         input.addEventListener('input', function() {
           const teamId = parseInt(this.dataset.teamId);
           const dateIndex = parseInt(this.dataset.dateIndex);
-          const value = parseFloat(this.value) || 0;
+          const value = Math.round((parseFloat(this.value) || 0) * 100) / 100;
           
           if (!trendData[teamId]) {
             trendData[teamId] = [];
@@ -1551,14 +1551,14 @@
 
     // 初始数据
     const defaultTeamData = [
-      { id: 1, name: "销售一部", slogan: "勇攀高峰，业绩为王", channel: "直播部", rate: 128.3, rankChange: 0, avatar: "" },
-      { id: 2, name: "销售二部", slogan: "团结协作，共创辉煌", channel: "视频部", rate: 115.6, rankChange: 2, avatar: "" },
-      { id: 3, name: "销售三部", slogan: "精益求精，追求卓越", channel: "品牌部", rate: 102.4, rankChange: -1, avatar: "" },
-      { id: 4, name: "区域团队A", slogan: "专注服务，用心经营", channel: "设计部", rate: 89.5, rankChange: 1, avatar: "" },
-      { id: 5, name: "区域团队B", slogan: "开拓创新，永不止步", channel: "平台运营", rate: 78.2, rankChange: -2, avatar: "" },
-      { id: 6, name: "电商团队", slogan: "诚信为本，质量第一", channel: "客服部", rate: 67.8, rankChange: 0, avatar: "" },
-      { id: 7, name: "新媒体团队", slogan: "内容为王，流量至上", channel: "直播部", rate: 56.4, rankChange: 3, avatar: "" },
-      { id: 8, name: "合作团队", slogan: "合作共赢，共同发展", channel: "视频部", rate: 45.2, rankChange: -1, avatar: "" }
+      { id: 1, name: "销售一部", slogan: "勇攀高峰，业绩为王", channel: "直播部", rate: 128.30, rankChange: 0, avatar: "" },
+      { id: 2, name: "销售二部", slogan: "团结协作，共创辉煌", channel: "视频部", rate: 115.60, rankChange: 2, avatar: "" },
+      { id: 3, name: "销售三部", slogan: "精益求精，追求卓越", channel: "品牌部", rate: 102.40, rankChange: -1, avatar: "" },
+      { id: 4, name: "区域团队A", slogan: "专注服务，用心经营", channel: "设计部", rate: 89.50, rankChange: 1, avatar: "" },
+      { id: 5, name: "区域团队B", slogan: "开拓创新，永不止步", channel: "平台运营", rate: 78.20, rankChange: -2, avatar: "" },
+      { id: 6, name: "电商团队", slogan: "诚信为本，质量第一", channel: "客服部", rate: 67.80, rankChange: 0, avatar: "" },
+      { id: 7, name: "新媒体团队", slogan: "内容为王，流量至上", channel: "直播部", rate: 56.40, rankChange: 3, avatar: "" },
+      { id: 8, name: "合作团队", slogan: "合作共赢，共同发展", channel: "视频部", rate: 45.20, rankChange: -1, avatar: "" }
     ];
 
     // 获取团队首字母缩写（用于默认头像）
@@ -1687,7 +1687,7 @@
               <h3 class="font-semibold text-sm sm:text-base text-neutral-700 truncate">${top3[1].name}</h3>
               ${top3[1].slogan ? `<p class="text-xs text-neutral-600 italic truncate mt-1 px-2"><i class="fa fa-quote-left mr-1"></i>${top3[1].slogan}</p>` : ''}
               <div class="mt-3">
-                <span class="text-xl sm:text-2xl font-bold text-neutral-700">${top3[1].rate}</span>
+                <span class="text-xl sm:text-2xl font-bold text-neutral-700">${top3[1].rate.toFixed(2)}</span>
                 <span class="text-neutral-500 text-xs">%</span>
               </div>
               <div class="mt-3 w-full h-1.5 bg-neutral-300 rounded-full overflow-hidden">
@@ -1712,7 +1712,7 @@
               <h3 class="font-bold text-lg sm:text-xl text-white truncate">${top3[0].name}</h3>
               ${top3[0].slogan ? `<p class="text-xs sm:text-sm text-white/80 italic truncate mt-1 px-2"><i class="fa fa-quote-left mr-1"></i>${top3[0].slogan}</p>` : ''}
               <div class="mt-3 sm:mt-4">
-                <span class="text-3xl sm:text-4xl font-bold text-white">${top3[0].rate}</span>
+                <span class="text-3xl sm:text-4xl font-bold text-white">${top3[0].rate.toFixed(2)}</span>
                 <span class="text-white/90 text-base">%</span>
               </div>
               <div class="mt-3 w-full h-2.5 bg-white/30 rounded-full overflow-hidden">
@@ -1737,7 +1737,7 @@
               <h3 class="font-semibold text-sm sm:text-base text-white truncate">${top3[2].name}</h3>
               ${top3[2].slogan ? `<p class="text-xs text-white/80 italic truncate mt-1 px-2"><i class="fa fa-quote-left mr-1"></i>${top3[2].slogan}</p>` : ''}
               <div class="mt-3">
-                <span class="text-xl sm:text-2xl font-bold text-white">${top3[2].rate}</span>
+                <span class="text-xl sm:text-2xl font-bold text-white">${top3[2].rate.toFixed(2)}</span>
                 <span class="text-white/90 text-xs">%</span>
               </div>
               <div class="mt-3 w-full h-1.5 bg-white/30 rounded-full overflow-hidden">
@@ -1781,7 +1781,7 @@
             </div>
             <div class="flex items-center gap-4 sm:gap-6 flex-shrink-0 ml-3">
               <div class="text-right">
-                <span class="text-lg sm:text-xl font-bold ${rateColor} whitespace-nowrap">${team.rate}%</span>
+                <span class="text-lg sm:text-xl font-bold ${rateColor} whitespace-nowrap">${team.rate.toFixed(2)}%</span>
                 <div class="w-20 sm:w-24 h-1.5 sm:h-2 bg-neutral-200 rounded-full mt-1.5">
                   <div class="h-full bg-gradient-to-r from-primary to-primary/80 rounded-full transition-all duration-1000" style="width: ${Math.min(team.rate, 100)}%"></div>
                 </div>
@@ -1868,7 +1868,7 @@
                 <p class="text-xs sm:text-sm text-neutral-500 truncate">${team.channel}</p>
               </div>
             </div>
-            <span class="font-bold text-sm sm:text-base text-neutral-800 ml-2">${team.rate}%</span>
+            <span class="font-bold text-sm sm:text-base text-neutral-800 ml-2">${team.rate.toFixed(2)}%</span>
           </div>
         `;
       });
@@ -1948,7 +1948,7 @@
               </div>
             </td>
             <td class="px-3 sm:px-4 py-2 sm:py-3">
-              <input type="number" step="0.1" value="${team.rate}" class="team-rate-input input-field text-xs sm:text-sm py-1 w-20 sm:w-24" data-field="rate">
+              <input type="number" step="0.01" value="${team.rate.toFixed(2)}" class="team-rate-input input-field text-xs sm:text-sm py-1 w-20 sm:w-24" data-field="rate">
             </td>
             <td class="px-3 sm:px-4 py-2 sm:py-3">
               <input type="number" value="${team.rankChange}" class="team-rankchange-input input-field text-xs sm:text-sm py-1 w-16 sm:w-20" data-field="rankChange">
@@ -1985,7 +1985,9 @@
           const field = input.dataset.field;
           let value = input.value;
           
-          if (field === 'rate' || field === 'rankChange') {
+          if (field === 'rate') {
+            value = Math.round((parseFloat(value) || 0) * 100) / 100;
+          } else if (field === 'rankChange') {
             value = parseFloat(value) || 0;
           }
           
@@ -2086,6 +2088,11 @@
     function updateTeamData(teamId, field, value) {
       const teamIndex = teamData.findIndex(team => team.id === teamId);
       if (teamIndex !== -1) {
+        // 如果是达成率字段，确保保留两位小数
+        if (field === 'rate') {
+          value = Math.round((parseFloat(value) || 0) * 100) / 100;
+        }
+        
         teamData[teamIndex][field] = value;
         
         if (field === 'rate') {
@@ -2144,7 +2151,7 @@
         name: name,
         slogan: '',
         channel: channel,
-        rate: parseFloat(rate) || 0,
+        rate: Math.round((parseFloat(rate) || 0) * 100) / 100,
         rankChange: 0,
         avatar: ''
       };
@@ -2167,7 +2174,7 @@
     // 更新总体达成率 - 添加动画
     function updateOverallRate() {
       const totalRate = teamData.reduce((sum, team) => sum + team.rate, 0);
-      const avgRate = (totalRate / teamData.length).toFixed(1);
+      const avgRate = (totalRate / teamData.length).toFixed(2);
       
       const rateElement = document.getElementById('overallRate');
       const currentRate = parseFloat(rateElement.textContent) || 0;
@@ -2177,7 +2184,7 @@
       document.getElementById('avgRate').textContent = avgRate;
       
       const maxRate = Math.max(...teamData.map(t => t.rate));
-      document.getElementById('maxRate').textContent = maxRate.toFixed(1);
+      document.getElementById('maxRate').textContent = maxRate.toFixed(2);
     }
 
     // 数字动画
@@ -2191,7 +2198,7 @@
         const progress = Math.min(elapsed / duration, 1);
         
         const current = startValue + (endValue - startValue) * progress;
-        element.textContent = current.toFixed(1);
+        element.textContent = current.toFixed(2);
         
         if (progress < 1) {
           requestAnimationFrame(update);
@@ -2804,16 +2811,18 @@
         
         localStorage.setItem('systemSettings', JSON.stringify(settings));
         
+        // 禁用自动刷新功能
         // 应用设置
-        if (refreshInterval && refreshInterval >= 10) {
-          clearInterval(autoRefreshTimer);
-          autoRefreshTimer = setInterval(refreshData, refreshInterval * 1000);
-        }
+        // if (refreshInterval && refreshInterval >= 10) {
+        //   clearInterval(autoRefreshTimer);
+        //   autoRefreshTimer = setInterval(refreshData, refreshInterval * 1000);
+        // }
+        console.log('自动刷新已禁用，设置已保存');
         
         // 重启倒计时
         startCountdown();
         
-        showMessage('设置已保存，倒计时已更新', 'success');
+        showMessage('设置已保存（自动刷新已禁用）', 'success');
       });
       
       // 时间范围选择
@@ -2903,7 +2912,7 @@
               count++;
             }
           });
-          avgData.push(count > 0 ? Math.round(sum / count * 10) / 10 : 0);
+          avgData.push(count > 0 ? Math.round(sum / count * 100) / 100 : 0);
         }
         
         datasets = [{
@@ -2949,7 +2958,9 @@
         
         if (settings.refreshInterval) {
           document.getElementById('refreshInterval').value = settings.refreshInterval;
-          autoRefreshTimer = setInterval(refreshData, settings.refreshInterval * 1000);
+          // 禁用自动刷新功能
+          // autoRefreshTimer = setInterval(refreshData, settings.refreshInterval * 1000);
+          console.log('自动刷新已禁用，刷新间隔设置:', settings.refreshInterval);
         }
         
         if (settings.dataSource) {
@@ -3046,10 +3057,12 @@
 
     // 页面可见性变化处理
     document.addEventListener('visibilitychange', function() {
-      if (!document.hidden) {
-        // 页面重新可见时刷新数据
-        refreshData();
-      }
+      // 禁用页面切换自动刷新
+      // if (!document.hidden) {
+      //   // 页面重新可见时刷新数据
+      //   refreshData();
+      // }
+      console.log('页面可见性变化，自动刷新已禁用');
     });
 
     // 添加触摸反馈（移动端）
@@ -3067,44 +3080,125 @@
       }
     }
 
-    // 初始化函数
+    // 初始化函数 - 增强错误诊断
     async function init() {
       try {
-        // 显示加载状态
-        console.log('系统初始化中...');
+        console.log('========================================');
+        console.log('系统初始化开始 - ' + new Date().toLocaleString());
+        console.log('========================================');
         
-        // 加载数据
+        // 步骤1: 检查DOM元素
+        console.log('[1/10] 检查关键DOM元素...');
+        const criticalElements = [
+          'rankingList', 'topThreeContainer', 'editableTeamTable',
+          'announcementContainer', 'bestTeamsContainer', 'trendChart',
+          'achievementChart', 'lastUpdateTime', 'refreshBtn'
+        ];
+        
+        const missingElements = [];
+        criticalElements.forEach(id => {
+          const el = document.getElementById(id);
+          if (!el) {
+            missingElements.push(id);
+            console.error(`  ✗ 缺失元素: ${id}`);
+          } else {
+            console.log(`  ✓ 找到元素: ${id}`);
+          }
+        });
+        
+        if (missingElements.length > 0) {
+          throw new Error(`缺失关键DOM元素: ${missingElements.join(', ')}`);
+        }
+        
+        // 步骤2: 加载本地数据
+        console.log('[2/10] 加载团队数据...');
         loadTeamData();
+        console.log(`  ✓ 加载了 ${teamData.length} 个团队`);
+        
+        console.log('[3/10] 加载系统设置...');
         loadSystemSettings();
-        await loadDataFromAPI();
+        console.log('  ✓ 系统设置已加载');
+        
+        // 步骤3: 加载远程数据（可选）
+        console.log('[4/10] 尝试加载远程数据...');
+        try {
+          await loadDataFromAPI();
+          console.log('  ✓ 远程数据加载成功');
+        } catch (err) {
+          console.warn('  ⚠ 远程数据加载失败，使用本地数据:', err.message);
+        }
+        
+        console.log('[5/10] 加载公告数据...');
         loadAnnouncements();
+        console.log(`  ✓ 加载了 ${announcements.length} 条公告`);
+        
+        console.log('[6/10] 加载奖项数据...');
         loadAwards();
+        console.log(`  ✓ 加载了 ${awards.length} 个奖项`);
+        
+        console.log('[7/10] 加载趋势数据...');
         loadTrendData();
+        console.log(`  ✓ 加载了 ${trendDates.length} 个日期节点`);
         
-        // 创建界面
+        // 步骤4: 渲染界面
+        console.log('[8/10] 渲染界面组件...');
         renderRankingList();
+        console.log('  ✓ 排行榜列表已渲染');
+        
         renderEditableTable();
+        console.log('  ✓ 编辑表格已渲染');
+        
         renderAnnouncements();
+        console.log('  ✓ 公告列表已渲染');
+        
         renderAnnouncementHistory();
+        console.log('  ✓ 公告历史已渲染');
+        
         renderAwardsList();
+        console.log('  ✓ 奖项列表已渲染');
+        
         renderBestTeams();
+        console.log('  ✓ 最佳团队已渲染');
+        
         renderTrendDates();
+        console.log('  ✓ 趋势日期已渲染');
+        
         renderTrendDataTable();
+        console.log('  ✓ 趋势数据表已渲染');
         
-        // 初始化功能
+        // 步骤5: 初始化功能
+        console.log('[9/10] 初始化功能模块...');
+        
         initCharts();
+        console.log('  ✓ 图表已初始化');
+        
         startCountdown();
+        console.log('  ✓ 倒计时已启动');
+        
         setupEventListeners();
+        console.log('  ✓ 事件监听器已设置');
+        
         setupKeyboardShortcuts();
+        console.log('  ✓ 键盘快捷键已设置');
+        
         setupTouchFeedback();
+        console.log('  ✓ 触摸反馈已设置');
         
-        // 更新显示
+        // 步骤6: 更新显示
+        console.log('[10/10] 更新数据显示...');
         updateOverallRate();
-        updateCharts();
-        handleResponsive();
+        console.log('  ✓ 总体达成率已更新');
         
-        // 启用自动功能
+        updateCharts();
+        console.log('  ✓ 图表数据已更新');
+        
+        handleResponsive();
+        console.log('  ✓ 响应式处理完成');
+        
+        // 启用自动保存（但不启用自动刷新）
         enableAutoSave();
+        console.log('  ✓ 自动保存已启用（30秒间隔）');
+        console.log('  ⚠ 自动刷新已禁用，仅保留手动刷新功能');
         
         // 更新最后更新时间
         const now = new Date();
@@ -3121,13 +3215,36 @@
         
         // 显示加载成功
         setTimeout(() => {
-          showMessage('系统加载完成', 'success');
+          showMessage('系统加载完成（自动刷新已禁用）', 'success');
         }, 500);
         
-        console.log('系统初始化完成');
+        console.log('========================================');
+        console.log('✓ 系统初始化成功完成');
+        console.log('========================================');
         
       } catch (error) {
-        console.error('初始化失败:', error);
+        console.error('========================================');
+        console.error('✗ 初始化失败详情:');
+        console.error('错误类型:', error.name);
+        console.error('错误消息:', error.message);
+        console.error('错误堆栈:', error.stack);
+        console.error('========================================');
+        
+        // 显示友好的错误信息
+        const errorMsg = `
+系统初始化失败！
+
+错误类型: ${error.name}
+错误信息: ${error.message}
+
+请检查：
+1. 浏览器控制台查看详细错误
+2. 清除浏览器缓存和localStorage
+3. 确保网络连接正常
+4. 尝试刷新页面
+        `;
+        
+        alert(errorMsg);
         showMessage('系统初始化失败: ' + error.message, 'error');
       }
     }
